@@ -25,7 +25,7 @@ opts = fitoptions(...
 
 for i=1:Num_sweeps
     if(data_date_index(i,1)~=0)
-        disp(['Sweep number=', num2str(i)]);
+%         disp(['Sweep number=', num2str(i)]);
         esadata_fit = (data_to_fit(i,5:29));
         esadata_fit = esadata_fit'+1;  %The curve fitter can't fit if there are 0s
         [aa,bb,cc,dd,guess_status] = Fit_guess(esadata_fit,xdata);
