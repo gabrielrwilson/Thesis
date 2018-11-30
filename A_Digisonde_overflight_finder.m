@@ -17,6 +17,7 @@
 %% Clear workspace
 clear all;
 close all;
+clc
 
 %% Read in all of L3 NetCDF files
 
