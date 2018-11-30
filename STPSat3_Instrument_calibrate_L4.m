@@ -21,7 +21,7 @@ delete(gcp('nocreate'));
 par_info = parpool();
 workers = par_info.NumWorkers;
 
-for parint = 1:Data_file_number
+parfor parint = 1:Data_file_number
     Calibrate_parallel(Through_Put,Derived_plate_factor,directory,parint);
 end
 %% Appendix and Notes
