@@ -1,4 +1,4 @@
-function [framefile,frametime,NC_error] = STPSat3_L1_to_L2_Parallel_processor_function(parint,L1_folder_name,L2_folder_name)
+function [framefile,frametime,NC_error] = STPSat3_L1_to_L2_Parallel_processor_function(parint,L1_folder_name,L2_folder_name,Through_Put,Derived_plate_factor)
      %% Todo
     % Research a good method for calculating the signal to noise ratio
     % Find actual fiddle factor
@@ -33,6 +33,7 @@ function [framefile,frametime,NC_error] = STPSat3_L1_to_L2_Parallel_processor_fu
     framefile=nan(16,1);
     frametime=nan(16,1);
     NC_error=cell(6,1);
+    
     try
         %% Global Variables
         Kb = 8.6173303*10^-5;  %Boltzman Constant in eV/K

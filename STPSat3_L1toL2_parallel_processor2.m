@@ -20,29 +20,19 @@ clc;
 directory = uigetdir('C:\','Select plate factor calc directory.');
 cd(directory);
 load Simion_calcs;
-
-L1_folder_name = uigetdir('','Select folder that contains L1 data');
-cd(L1_folder_name);
+NC_source_folder_name = uigetdir('','Select folder that contains the netcdf files.');
+cd(NC_folder_name);
 file_list = dir('*.nc');
-[num_L1_files,~] = size(file_list);    
+[num_files,~] = size(file_list);    
 
-L2_folder_name = uigetdir('','Select folder that contains L2 data');
-framefile=nan(16,num_L1_files);
-frametime=nan(16,num_L1_files);
-NC_error = cell(6,num_L1_files);
+NC_destination_folder_name = uigetdir('','Select folder to save the netcdf files.');
+
 
 delete(gcp('nocreate'));
 par_info = parpool();
 workers = par_info.NumWorkers;
 
-parfor parint = 1:num_L1_files   
-%     tic
+parfor parint = 1:num_files   
     [framefile(:,parint),frametime(:,parint),NC_error(:,parint)] =...
-        STPSat3_L1_to_L2_Parallel_processor_function(parint,L1_folder_name,L2_folder_name,platefactor_folder_name);
-%     toc
-%     parsave(strcat(L2_folder_name,'\','NC_error'),NC_error);
+        STPSat3_L1_to_L2_Parallel_processor_function2(parint,NC_source_folder_name,NC_destination_folder_name,Through_Put,Derived_plate_factor);
 end
-% cd(L2_folder_name);
-% save('framefile','framefile');
-% save('frametime','frametime');  
-% save('NC_error','NC_error');

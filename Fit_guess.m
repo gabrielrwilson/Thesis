@@ -108,10 +108,14 @@ function [A,B,C,D,status] = Fit_guess(esadata_fit,xdata)
                     esa_extreme_index = find( abs(esadata_fit) >= abs(esa_max)-(abs(esa_max)-abs(esa_min))*.25 );
 
                     % Eliminate spurious noise at the beginning
-                    if( (esa_extreme_index(1,1)==1)&&(length(esa_extreme_index)>1) )
-                        if( (esa_extreme_index(1,2)-esa_extreme_index(1,1))>1 )
-                            esa_extreme_index=esa_extreme_index(2:length(esa_extreme_index),1);
-                        end                       
+                    if(~isempty(esa_extreme_index))
+                        if( (esa_extreme_index(1,1)==1)&&(length(esa_extreme_index)>1) )
+                            if( (esa_extreme_index(2,1)-esa_extreme_index(1,1))>1 )
+                                esa_extreme_index=esa_extreme_index(2:length(esa_extreme_index),1);
+                            end   
+                        end
+                    else
+                        esa_extreme_index=1;
                     end
 
                     %Take one more index on each side so we get at least three

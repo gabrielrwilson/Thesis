@@ -17,13 +17,16 @@ opts = fitoptions(...
     'DiffMinChange',10^-16,... Min change in coefficients (default 1e-8)
     'DiffMaxChange',1,... Max change in coefficients (default 0.1)
     'Display','off',... display no output
-    'MaxFunEvals',4000,... Max number of function evals (default 600)
-    'MaxIter',2000,... maximum number or iterations for the fit (default 400)
+    'MaxFunEvals',600,... Max number of function evals (default 600)
+    'MaxIter',400,... maximum number or iterations for the fit (default 400)
     'TolFun',1e-17,... Termination tolerance of the function (default 1e-6)
     'TolX',1e-17... Termination tolerance of the coefficients (default 1e-6)
 ); 
 
 for i=1:Num_sweeps
+    if(mod(i,1000)==0)
+        disp(['Processing Sweep ', num2str(i),'.']);
+    end
     if(data_date_index(i,1)~=0)
 %         disp(['Sweep number=', num2str(i)]);
         esadata_fit = (data_to_fit(i,5:29));
