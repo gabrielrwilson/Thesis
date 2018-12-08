@@ -27,7 +27,6 @@ file_list = dir('*.nc');
 
 NC_destination_folder_name = uigetdir('','Select folder to save the netcdf files.');
 
-
 delete(gcp('nocreate'));
 par_info = parpool();
 workers = par_info.NumWorkers;

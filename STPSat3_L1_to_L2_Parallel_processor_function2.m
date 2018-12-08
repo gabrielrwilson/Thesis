@@ -37,7 +37,8 @@ function STPSat3_L1_to_L2_Parallel_processor_function2(parint,NC_source_folder_n
         nc_file_list = dir(nc_files);
         filename = nc_file_list(parint).name;    
         fullfilename = strcat(NC_source_folder_name,'\',filename);
-
+        disp(['Process NC file number ', num2str(parint), '. The filename is: ', filename]);
+        
     %% Determine what the processing status of the file    
         info = ncinfo(fullfilename);
         num_vars = length(info.Variables);
@@ -66,9 +67,18 @@ function STPSat3_L1_to_L2_Parallel_processor_function2(parint,NC_source_folder_n
             end
         end
         
-        if(stat_var)
-            disp('NC File already has up-to-date L2 data');
+        if( ~strcmp(NC_destination_folder_name,NC_source_folder_name) )
+                dest_filename = strrep(filename,'_D','');
+                dest_filename = strrep(dest_filename,'_E','');
+                dest_filename = strrep(dest_filename,'_L1','');
+                dest_fullfilename = strcat(NC_destination_folder_name,'\',dest_filename);                
+        end        
+        
+        if( (stat_var)||(exist(dest_fullfilename)==2) )
+            disp([filename, ' already has up-to-date L2 data.']);
         else
+            
+            disp(['Generating L2 data for ', filename]);
             %% Global Variables
             MAX_NUM_SWEEP_STEPS = 29; % 29 steps in each sweep
             step_num = MAX_NUM_SWEEP_STEPS;
@@ -240,7 +250,7 @@ function STPSat3_L1_to_L2_Parallel_processor_function2(parint,NC_source_folder_n
             %% Do Fits
             %Fit to a drifted maxwellian
             [rsquared,fit_parameters] = STPSat3_fit(num_sweeps,...
-                Incident_ion_density,data_date_index,energy);
+                Incident_ion_density,data_date_index,energy,filename);
 
             % Calculate the riemann density
             dE = energy(5)-energy(4);
@@ -262,6 +272,7 @@ function STPSat3_L1_to_L2_Parallel_processor_function2(parint,NC_source_folder_n
                 dest_filename = strrep(filename,'_D','');
                 dest_filename = strrep(dest_filename,'_E','');
                 dest_filename = strrep(dest_filename,'_L1','');
+                dest_filename = strrep(dest_filename,'E','D');
                 dest_fullfilename = strcat(NC_destination_folder_name,'\',dest_filename);                
                 copyfile(fullfilename,dest_fullfilename);
            end
@@ -435,7 +446,15 @@ function STPSat3_L1_to_L2_Parallel_processor_function2(parint,NC_source_folder_n
         EM_name =  ME.stack(1).name;
         EM_line = ME.stack(1).line;
         EM = ME.message;
-        error_fullfilename = strcat(NC_destination_folder_name,'\L2 Error Codes\',strrep(dest_fullfilename,'.nc','_L2_error.txt'));
+        
+        if( ~strcmp(NC_destination_folder_name,NC_source_folder_name) )
+                dest_filename = strrep(filename,'_D','');
+                dest_filename = strrep(dest_filename,'_E','');
+                dest_filename = strrep(dest_filename,'_L1','');
+                dest_fullfilename = strcat(NC_destination_folder_name,'\',dest_filename);                
+        end
+           
+        error_fullfilename = strcat(NC_destination_folder_name,'\L2 Error Codes\',strrep(dest_filename,'.nc','_L2_error.txt'));
         fileID = fopen(error_fullfilename,'w');
         if( isenum(i) )
             fprintf(fileID,strcat('Sweepnumber: ',num2str(i)));

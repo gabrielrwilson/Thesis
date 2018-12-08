@@ -57,7 +57,7 @@ for active_file = 1:Data_file_number
     disp(['Processing ', data_FileName]);
     
    % Make the IRI netcdf name
-    IRI_nc_name = strrep(data_FileName,'D','E');
+    IRI_nc_name = strrep(data_FileName,'_D','_E');
     IRI_file_name = strcat(IRI_folder_name,'\',IRI_nc_name);
     ncfullfilename = IRI_file_name;
     

@@ -1,4 +1,4 @@
-function [rsquared,fit_parameters,exponent_dropped] = STPSat3_fit(Num_sweeps,data_to_fit,data_date_index,Energy)
+function [rsquared,fit_parameters,exponent_dropped] = STPSat3_fit(Num_sweeps,data_to_fit,data_date_index,Energy,filename)
 fit_parameters = nan(5,4,Num_sweeps);     
 rsquared = nan(1,Num_sweeps);
 exponent_dropped = nan(1,Num_sweeps);
@@ -25,7 +25,7 @@ opts = fitoptions(...
 
 for i=1:Num_sweeps
     if(mod(i,1000)==0)
-        disp(['Processing Sweep ', num2str(i),'.']);
+        disp(['Processing Sweep ', num2str(i),' in ', filename, '.']);
     end
     if(data_date_index(i,1)~=0)
 %         disp(['Sweep number=', num2str(i)]);
