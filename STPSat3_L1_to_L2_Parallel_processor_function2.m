@@ -1,4 +1,4 @@
-function [] = STPSat3_L1_to_L2_Parallel_processor_function2(parint,NC_source_folder_name,NC_destination_folder_name,Through_Put,Derived_plate_factor)
+function STPSat3_L1_to_L2_Parallel_processor_function2(parint,NC_source_folder_name,NC_destination_folder_name,Through_Put,Derived_plate_factor)
 %% REV a
     % Created 7-Dec, 2018    
 
@@ -52,7 +52,7 @@ function [] = STPSat3_L1_to_L2_Parallel_processor_function2(parint,NC_source_fol
         if(stat_var == 0)
             Processing_Status = char(ones(50,1)*'NYR');
             Processing_Status(1,:) = 'L1a';
-            nccreate_nobreak(fullfilename,'Processing_Status','Dimensions',{'50',50,'3',3},'Datatype','char');
+            nccreate(fullfilename,'Processing_Status','Dimensions',{'50',50,'3',3},'Datatype','char');
             ncwrite(fullfilename,'Processing_Status',Processing_Status);
             ncwriteatt(fullfilename,'Processing_Status','description','A log of which processing scrips have been run on the data.');
         else
@@ -71,6 +71,7 @@ function [] = STPSat3_L1_to_L2_Parallel_processor_function2(parint,NC_source_fol
         else
             %% Global Variables
             MAX_NUM_SWEEP_STEPS = 29; % 29 steps in each sweep
+            step_num = MAX_NUM_SWEEP_STEPS;
             ADC_bit_Depth = 12;
             ADC_satuation_volt = 2.5;
             TIA_GAIN = -1019160.2; % 1 Mohm
@@ -95,10 +96,10 @@ function [] = STPSat3_L1_to_L2_Parallel_processor_function2(parint,NC_source_fol
             x= Through_Put(:,1);
             y= Through_Put(:,2);
             ThroughPut_line = polyfit(x,y,1);
-            plot(x,y);
-            hold on
-            yfit = ThroughPut_line(1)*x+ThroughPut_line(2);
-            plot(x,yfit,'r-.');
+%             plot(x,y);
+%             hold on
+%             yfit = ThroughPut_line(1)*x+ThroughPut_line(2);
+%             plot(x,yfit,'r-.');
             Through_put_VS_energy = ThroughPut_line(1)*energy+ThroughPut_line(2);
 
             raw_data = ncread(fullfilename,'1_sweep_raw_data');
@@ -257,102 +258,173 @@ function [] = STPSat3_L1_to_L2_Parallel_processor_function2(parint,NC_source_fol
             end
 
             %% Update or create the L2 file
-            if( ~strcat(NC_destination_folder_name,NC_source_folder_name) )
+            if( ~strcmp(NC_destination_folder_name,NC_source_folder_name) )
                 dest_filename = strrep(filename,'_D','');
+                dest_filename = strrep(dest_filename,'_E','');
                 dest_filename = strrep(dest_filename,'_L1','');
-                fullfilename = strcat(NC_destination_folder_name,'\',dest_filename);                
-            end
+                dest_fullfilename = strcat(NC_destination_folder_name,'\',dest_filename);                
+                copyfile(fullfilename,dest_fullfilename);
+           end
             
-            copyfile(sourcefullfilename,fullfilename);
             ncid = netcdf.open(fullfilename,'NC_WRITE');    
-            ncwriteatt(fullfilename,'/','g_nc_creation_time',datestr(now));
+            ncwriteatt(dest_fullfilename,'/','g_nc_creation_time',datestr(now));
 
             % The sweep temperature
-            nccreate_nobreak(fullfilename,'2_sweep_temperature','Dimensions',{'sweep_num',Num_sweeps});
-            ncwrite(fullfilename,'2_sweep_temperature',Temperature);
-            ncwriteatt(fullfilename,'2_sweep_temperature','description','The temperature for each sweep.');
+            try
+                nccreate(dest_fullfilename,'2_sweep_temperature','Dimensions',{'sweep_num',num_sweeps});
+            catch
+            end
+            ncwrite(dest_fullfilename,'2_sweep_temperature',Temperature);
+            ncwriteatt(dest_fullfilename,'2_sweep_temperature','description','The temperature for each sweep.');
            
             % The sweep Ion Density
-            nccreate_nobreak(fullfilename,'2_sweep_ion_density','Dimensions',{'sweep_num',Num_sweeps});
-            ncwrite(fullfilename,'2_sweep_ion_density',ion_density);
-            ncwriteatt(fullfilename,'2_sweep_ion_density','description','The fit ion density at each sweep.');
+            try
+                nccreate(dest_fullfilename,'2_sweep_ion_density','Dimensions',{'sweep_num',num_sweeps});
+            catch
+            end
+            ncwrite(dest_fullfilename,'2_sweep_ion_density',ion_density);
+            ncwriteatt(dest_fullfilename,'2_sweep_ion_density','description','The fit ion density at each sweep.');
 
             % The fit parameters for each sweep
-            nccreate_nobreak(fullfilename,'2_fit_parameters','Dimensions',{'bound_step',5,'bound_num',4,'sweep_num',Num_sweeps});
-            ncwrite(fullfilename,'2_fit_parameters',fit_parameters);
-            ncwriteatt(fullfilename,'2_fit_parameters','description','The fit parameters from each sweep drifted maxwellian fit. [aa_guess bb_guess cc_guess dd_guess; aa_fit bb_fit cc_fit dd_fit; aa_lowerbound bb_lowerbound cc_lowerbound dd_lowerbound; aa_upperbound bb_upperbound cc_upperbound dd_upperbound; Sum_of_squares_due_to_error Degrees_of_freedom_in_the_error adjr^2 root_mean_square_error]');
+            try
+                nccreate(dest_fullfilename,'2_fit_parameters','Dimensions',{'bound_step',5,'bound_num',4,'sweep_num',num_sweeps});
+            catch
+            end
+            ncwrite(dest_fullfilename,'2_fit_parameters',fit_parameters);
+            ncwriteatt(dest_fullfilename,'2_fit_parameters','description','The fit parameters from each sweep drifted maxwellian fit. [aa_guess bb_guess cc_guess dd_guess; aa_fit bb_fit cc_fit dd_fit; aa_lowerbound bb_lowerbound cc_lowerbound dd_lowerbound; aa_upperbound bb_upperbound cc_upperbound dd_upperbound; Sum_of_squares_due_to_error Degrees_of_freedom_in_the_error adjr^2 root_mean_square_error]');
 
             % The sweep Space Craft Charging
-            nccreate_nobreak(fullfilename,'2_sweep_spacecraft_charging','Dimensions',{'sweep_num',Num_sweeps});
-            ncwrite(fullfilename,'2_sweep_spacecraft_charging',spacecraft_charging);
-            ncwriteatt(fullfilename,'2_sweep_spacecraft_charging','description','The spacecraft charging for each sweep.');
+            try
+                nccreate(dest_fullfilename,'2_sweep_spacecraft_charging','Dimensions',{'sweep_num',num_sweeps});
+            catch
+            end
+            ncwrite(dest_fullfilename,'2_sweep_spacecraft_charging',spacecraft_charging);
+            ncwriteatt(dest_fullfilename,'2_sweep_spacecraft_charging','description','The spacecraft charging for each sweep.');
           
             % The sweep Rsquared
-            nccreate_nobreak(fullfilename,'2_sweep_rsquared','Dimensions',{'sweep_num',Num_sweeps});
-            ncwrite(fullfilename,'2_sweep_rsquared',rsquared);
-            ncwriteatt(fullfilename,'2_sweep_rsquared','description','The R^2 value from the fit.');        
+            try
+                nccreate(dest_fullfilename,'2_sweep_rsquared','Dimensions',{'sweep_num',num_sweeps});
+            catch
+            end
+            ncwrite(dest_fullfilename,'2_sweep_rsquared',rsquared);
+            ncwriteatt(dest_fullfilename,'2_sweep_rsquared','description','The R^2 value from the fit.');        
 
             % The sweep signal to noise as a ratio
-            nccreate_nobreak(fullfilename,'2_sweep_fit_index','Dimensions',{'sweep_fit_counter',sweep_fit_counter});
-            ncwrite(fullfilename,'2_sweep_fit_index',sweep_fit_index);
-            ncwriteatt(fullfilename,'2_sweep_fit_index','description','The index of sweeps where fits were attempted.');        
+%             try
+%                 nccreate(dest_fullfilename,'2_sweep_fit_index','Dimensions',{'sweep_fit_counter',sweep_fit_counter});
+%             catch
+%             end
+%             ncwrite(dest_fullfilename,'2_sweep_fit_index',sweep_fit_index);
+%             ncwriteatt(dest_fullfilename,'2_sweep_fit_index','description','The index of sweeps where fits were attempted.');        
 
             % The sweep signal ADC values
-            nccreate_nobreak(fullfilename,'2_sweep_adc_output','Dimensions',{'sweep_num',Num_sweeps,'step_num',step_num});
-            ncwrite(fullfilename,'2_sweep_adc_output',ADC_output);
-            ncwriteatt(fullfilename,'2_sweep_adc_output','description','The value output by the ADC.');    
+            try
+                nccreate(dest_fullfilename,'2_sweep_adc_output','Dimensions',{'sweep_num',num_sweeps,'step_num',step_num});
+            catch
+            end
+            ncwrite(dest_fullfilename,'2_sweep_adc_output',ADC_output);
+            ncwriteatt(dest_fullfilename,'2_sweep_adc_output','description','The value output by the ADC.');    
  
-            nccreate_nobreak(fullfilename,'2_sweep_adc','Dimensions',{'sweep_num',Num_sweeps,'step_num',step_num});
-            ncwrite(fullfilename,'2_sweep_adc',ADC_value);
-            ncwriteatt(fullfilename,'2_sweep_adc','description','The sweep adc values as measured.');
+            try
+                nccreate(dest_fullfilename,'2_sweep_adc','Dimensions',{'sweep_num',num_sweeps,'step_num',step_num});
+            catch
+            end
+            ncwrite(dest_fullfilename,'2_sweep_adc',ADC_value);
+            ncwriteatt(dest_fullfilename,'2_sweep_adc','description','The sweep adc values as measured.');
             
             % The sweep sweep voltage
-            nccreate_nobreak(fullfilename,'2_sweep_voltage','Dimensions',{'sweep_num',Num_sweeps,'step_num',step_num});
-            ncwrite(fullfilename,'2_sweep_voltage',ADC_voltage);
-            ncwriteatt(fullfilename,'2_sweep_voltage','description','The voltage as seen by the ADC.');    
+            try
+                nccreate(dest_fullfilename,'2_sweep_voltage','Dimensions',{'sweep_num',num_sweeps,'step_num',step_num});
+            catch
+            end
+            ncwrite(dest_fullfilename,'2_sweep_voltage',ADC_voltage);
+            ncwriteatt(dest_fullfilename,'2_sweep_voltage','description','The voltage as seen by the ADC.');    
  
             % The sweep TIA bias voltage
-            nccreate_nobreak(fullfilename,'2_sweep_TIA_bias_voltage','Dimensions',{'sweep_num',Num_sweeps,'1',1});
-            ncwrite(fullfilename,'2_sweep_TIA_bias_voltage',TIA_bias_voltage);
-            ncwriteatt(fullfilename,'2_sweep_TIA_bias_voltage','description','The quiescent voltage output by the TIA.'); 
+            try
+                nccreate(dest_fullfilename,'2_sweep_TIA_bias_voltage','Dimensions',{'sweep_num',num_sweeps,'1',1});
+            catch
+            end
+            ncwrite(dest_fullfilename,'2_sweep_TIA_bias_voltage',TIA_bias_voltage);
+            ncwriteatt(dest_fullfilename,'2_sweep_TIA_bias_voltage','description','The quiescent voltage output by the TIA.'); 
  
             % The sweep TIA voltage
-            nccreate_nobreak(fullfilename,'2_sweep_TIA_signal_voltage','Dimensions',{'sweep_num',Num_sweeps,'step_num',step_num});
-            ncwrite(fullfilename,'2_sweep_TIA_signal_voltage',TIA_output_voltage);
-            ncwriteatt(fullfilename,'2_sweep_TIA_signal_voltage','description','The voltage change output by the TIA current.'); 
+            try
+                nccreate(dest_fullfilename,'2_sweep_TIA_signal_voltage','Dimensions',{'sweep_num',num_sweeps,'step_num',step_num});
+            catch
+            end
+            ncwrite(dest_fullfilename,'2_sweep_TIA_signal_voltage',TIA_output_voltage);
+            ncwriteatt(dest_fullfilename,'2_sweep_TIA_signal_voltage','description','The voltage change output by the TIA current.'); 
             
             % The sweep TIA current
-%             nccreate_nobreak(fullfilename,'2_sweep_TIA_current','Dimensions',{'sweep_num',Num_sweeps,'step_num',step_num});
-%             ncwrite(fullfilename,'2_sweep_TIA_current',Anode_current);
-%             ncwriteatt(fullfilename,'2_sweep_TIA_current','description','The sweep TIA current.');    
+%             try
+%             nccreate(dest_fullfilename,'2_sweep_TIA_current','Dimensions',{'sweep_num',num_sweeps,'step_num',step_num});
+%             catch
+%             end
+%             ncwrite(dest_fullfilename,'2_sweep_TIA_current',Anode_current);
+%             ncwriteatt(dest_fullfilename,'2_sweep_TIA_current','description','The sweep TIA current.');    
 
             % The sweep Ion current into the TIA
-            nccreate_nobreak(fullfilename,'2_sweep_Ion_current','Dimensions',{'sweep_num',Num_sweeps,'step_num',step_num});
-            ncwrite(fullfilename,'2_sweep_Ion_current',Anode_current);
-            ncwriteatt(fullfilename,'2_sweep_Ion_current','description','The ion current onto the anode.');    
+            try
+                nccreate(dest_fullfilename,'2_sweep_Ion_current','Dimensions',{'sweep_num',num_sweeps,'step_num',step_num});
+            catch
+            end
+            ncwrite(dest_fullfilename,'2_sweep_Ion_current',Anode_current);
+            ncwriteatt(dest_fullfilename,'2_sweep_Ion_current','description','The ion current onto the anode.');    
 
             % The Ion flux into the anode
-            nccreate_nobreak(fullfilename,'2_sweep_Ion_flux','Dimensions',{'sweep_num',Num_sweeps,'step_num',step_num});
-            ncwrite(fullfilename,'2_sweep_Ion_flux',Anode_ion_number);
-            ncwriteatt(fullfilename,'2_sweep_Ion_flux','description','The ion number density incident on the anode.');    
+            try
+                nccreate(dest_fullfilename,'2_sweep_Ion_flux','Dimensions',{'sweep_num',num_sweeps,'step_num',step_num});
+            catch
+            end
+            ncwrite(dest_fullfilename,'2_sweep_Ion_flux',Anode_ion_number);
+            ncwriteatt(dest_fullfilename,'2_sweep_Ion_flux','description','The ion number density incident on the anode.');    
 
             % The Ion flux into the instrument
-            nccreate_nobreak(fullfilename,'2_sweep_aperature_Ion_flux','Dimensions',{'sweep_num',Num_sweeps,'step_num',step_num});
-            ncwrite(fullfilename,'2_sweep_aperature_Ion_flux',Aperature_ion_number);
-            ncwriteatt(fullfilename,'2_sweep_aperature_Ion_flux','description','The Ion current encountered by the instrument.');    
+            try
+                nccreate(dest_fullfilename,'2_sweep_aperature_Ion_flux','Dimensions',{'sweep_num',num_sweeps,'step_num',step_num});
+            catch
+            end
+            ncwrite(dest_fullfilename,'2_sweep_aperature_Ion_flux',Aperature_ion_number);
+            ncwriteatt(dest_fullfilename,'2_sweep_aperature_Ion_flux','description','The Ion current encountered by the instrument.');    
 
             % The Ion density before interacting with instrument
-            nccreate_nobreak(fullfilename,'2_Incident_ion_density','Dimensions',{'sweep_num',Num_sweeps,'step_num',step_num});
-            ncwrite(fullfilename,'2_Incident_ion_density',Incident_ion_density);
-            ncwriteatt(fullfilename,'2_Incident_ion_density','description','The Ion number density enountered by the instrument.');    
+            try
+                nccreate(dest_fullfilename,'2_Incident_ion_density','Dimensions',{'sweep_num',num_sweeps,'step_num',step_num});
+            catch
+            end
+            ncwrite(dest_fullfilename,'2_Incident_ion_density',Incident_ion_density);
+            ncwriteatt(dest_fullfilename,'2_Incident_ion_density','description','The Ion number density enountered by the instrument.');    
 
+            try
+                nccreate(dest_fullfilename,'2_Through_Put','Dimensions',{'27',27,'2',2});
+            catch
+            end
+            ncwrite(dest_fullfilename,'2_Through_Put',Through_Put);
+            ncwriteatt(dest_fullfilename,'2_Through_Put','description','The energy dependent instrument throughput from Simion.');    
+
+            try
+                nccreate(dest_fullfilename,'2_Derived_plate_factor','Dimensions',{'1',1});
+            catch
+            end
+            ncwrite(dest_fullfilename,'2_Derived_plate_factor',Derived_plate_factor);
+            ncwriteatt(dest_fullfilename,'2_Derived_plate_factor','description','The instrument platefactor from Simion.');    
+
+            try
+                nccreate(dest_fullfilename,'2_Through_put_VS_energy','Dimensions',{'1',1,'step_num',step_num});
+            catch
+            end
+            ncwrite(dest_fullfilename,'2_Through_put_VS_energy',Through_put_VS_energy);
+            ncwriteatt(dest_fullfilename,'2_Through_put_VS_energy','description','The Ion number density enountered by the instrument.');    
+
+            
             for i=1:length(Processing_Status)          
                 if(strcmp(Processing_Status(i,:),'NYR'))
                     break;
                 end
             end
-            Processing_Status(i+1,:) = 'L2a';
-            ncwrite(fullfilename,'Processing_Status',Processing_Status);
+            Processing_Status(i,:) = 'L2a';
+            ncwrite(dest_fullfilename,'Processing_Status',Processing_Status);
             
             netcdf.close(ncid);
 
@@ -363,13 +435,13 @@ function [] = STPSat3_L1_to_L2_Parallel_processor_function2(parint,NC_source_fol
         EM_name =  ME.stack(1).name;
         EM_line = ME.stack(1).line;
         EM = ME.message;
-        error_fullfilename = strcat(NC_destination_folder_name,'\L2 Error Codes\',strrep(sourcefullfilename,'.nc','_L2.txt'));
+        error_fullfilename = strcat(NC_destination_folder_name,'\L2 Error Codes\',strrep(dest_fullfilename,'.nc','_L2_error.txt'));
         fileID = fopen(error_fullfilename,'w');
         if( isenum(i) )
             fprintf(fileID,strcat('Sweepnumber: ',num2str(i)));
         end
         fprintf(fileID,'\r\n');
-        fprintf(fileID,strcat('Active_file: ',num2str(active_file)));
+        fprintf(fileID,strcat('parint: ',num2str(parint)));
         fprintf(fileID,'\r\n');
         fprintf(fileID,strcat('Sourcefullfilename: ',sourcefullfilename));
         fprintf(fileID,'\r\n');
@@ -382,13 +454,13 @@ function [] = STPSat3_L1_to_L2_Parallel_processor_function2(parint,NC_source_fol
         fclose(fileID);
                 
         NC_error(1,1) = {['Sweepnumber: ',num2str(i)]};
-        NC_error(2,1) = {['Active_file: ',num2str(active_file)]};
+        NC_error(2,1) = {['parint: ',num2str(parint)]};
         NC_error(3,1) = {['Sourcefullfilename: ',sourcefullfilename]};
         NC_error(4,1) = {['Error Message: ',EM]};
         NC_error(5,1) = {['On Line: ',num2str(EM_line)]};    
         NC_error(6,1) = {['Error Name: ',EM_name]};   
         fprintf(2,['Error on worker ', num2str(parint), ' in function ', EM_name, ' at line ', num2str(EM_line), '. Message: ', EM,'\r']);           
-        fprintf(2,['Broke on active_file: ',num2str(active_file),', fullfilename: ',sourcefullfilename,' Sweepnumber: ',num2str(i),'\r']);
+        fprintf(2,['Broke on parint: ',num2str(parint),', fullfilename: ',sourcefullfilename,' Sweepnumber: ',num2str(i),'\r']);
         
         % Create and Add to error file
         fprintf(error_fullfilename,char(NC_error));

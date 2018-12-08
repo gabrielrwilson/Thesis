@@ -1,9 +1,9 @@
-function STPSat3_L2_to_L3_Parallel_processor_function2(parint,NC_source_folder_name,LLA_pathname)
+function STPSat3_L2_to_L3_Parallel_processor_function2(parint,NC_folder_name,LLA_pathname)
 
     %% Global Variables
     SECS_IN_DAY = 24 * 60 * 60;    
     try        
-        cd(NC_source_folder_name);
+        cd(NC_folder_name);
         NC_file_list = dir('*.nc');
         [NC_file_number,~] = size(NC_file_list);
         
@@ -34,9 +34,9 @@ function STPSat3_L2_to_L3_Parallel_processor_function2(parint,NC_source_folder_n
                                 break;
                             end
                         end
-                        Processing_Status(i+1,:) = 'L3a';
-                        ncwrite(fullfilename,'Processing_Status',Processing_Status);                   
-                        break;
+                        Processing_Status(j,:) = 'L3a';
+                        ncwrite(sourceFileName,'Processing_Status',Processing_Status);                         
+                        break;                   
                     end
                 end     
             end
@@ -44,20 +44,24 @@ function STPSat3_L2_to_L3_Parallel_processor_function2(parint,NC_source_folder_n
             stat_var = 0;
         end
 
-        llas_alt = zeros(SECS_IN_DAY,1);
-        llas_lat = zeros(SECS_IN_DAY,1);
-        llas_lon = zeros(SECS_IN_DAY,1);
-        llas_time = zeros(SECS_IN_DAY,1);
-        eclipse = zeros(SECS_IN_DAY,1);
+
         
         if(stat_var)
             disp(['Skipping file ', num2str(parint) ,'. NC file already processed for L3s']);
         else
             disp(['File ',num2str(parint),': Checking for LLAs.']);
 
+            llas_alt = zeros(SECS_IN_DAY,1);
+            llas_lat = zeros(SECS_IN_DAY,1);
+            llas_lon = zeros(SECS_IN_DAY,1);
+            llas_time = zeros(SECS_IN_DAY,1);
+            eclipse = zeros(SECS_IN_DAY,1);            
+            
             % Generate the filename to search for
-            llasfilename1 = strrep(sourceFileName,'STPSat3_DATA_','');
-            llasfilename2 = strrep(llasfilename1,'_L2.nc','');
+            llasfilename1 = strrep(sourceFileName,'STPSat3_','');
+            llasfilename1 = strrep(llasfilename1,'DATA_','');
+            llasfilename2 = strrep(llasfilename1,'_L2','');
+            llasfilename2 = strrep(llasfilename2,'.nc','');
             llasfilename = [llasfilename2,'_STPSat3_LLA.txt'];       
             fullllasfilename = strcat(LLA_pathname,'\',llasfilename);
 
@@ -65,7 +69,7 @@ function STPSat3_L2_to_L3_Parallel_processor_function2(parint,NC_source_folder_n
                 disp(['File ',num2str(parint),': ABORT, no LLAS report found.']);
                 
                 %% Save to list of missing LLAs
-                missing_LLA_filename = strcat(L3_folder_name,'\missing_LLA.txt');
+                missing_LLA_filename = strcat(NC_folder_name,'\missing_LLA.txt');
                 missing_LLA_fileID = fopen(missing_LLA_filename,'a');  
                 fprintf(missing_LLA_fileID,sourceFileName);
                 fprintf(missing_LLA_fileID,'\r\n');
@@ -81,7 +85,7 @@ function STPSat3_L2_to_L3_Parallel_processor_function2(parint,NC_source_folder_n
                     disp(['File ',num2str(parint),': ABORT, no day/night data found']);
                     
                     %% Save to list of missing day/nights
-                    missing_eclipse_filename = strcat(L3_folder_name,'\missing_eclipse.txt');
+                    missing_eclipse_filename = strcat(NC_folder_name,'\missing_eclipse.txt');
                     missing_eclipse_fileID = fopen(missing_eclipse_filename,'a');
                     fprintf(missing_eclipse_fileID,sourceFileName);
                     fprintf(missing_eclipse_fileID,'\r\n');
@@ -181,50 +185,7 @@ function STPSat3_L2_to_L3_Parallel_processor_function2(parint,NC_source_folder_n
                             eclipse(exit_eclipse_index(i):length(eclipse))=0;
                         end
                     end
-
-    %% Reformat IMESA data vectors so they start at 00:00:00 like all the lla vectors do.
-    % L2_name = strcat(NC_source_folder_name,'\',sourceFileName);
-    % sweep_time = ncread(L2_name,'1_time_sweep');
-    % missing_sweeps = ncread(L2_name,'1_missing_sweeps');
-    % signal = ncread(L2_name,'1_signal');
-    % raw_adc = ncread(L2_name,'1_raw_adc');
-    % sweep_voltage = ncread(L2_name,'2_sweep_voltage');
-    % sweep_current = ncread(L2_name,'2_sweep_current');
-    % temperature = ncread(L2_name,'1_sweep_temperature');
-    % ion_density = ncread(L2_name,'1_sweep_ion_density');
-    % spacecraft_charging = ncread(L2_name,'1_sweep_spacecraft_charging');
-    % rsquared = ncread(L2_name,'1_sweep_rsquared');
-    % 
-    % sweep_timec = nan(length(llas_time),1);
-    % missing_sweepsc = nan(length(llas_time),1);
-    % signalc = nan(length(llas_time),29);
-    % raw_adcc = nan(length(llas_time),29);
-    % sweep_voltagec = nan(length(llas_time),29);
-    % sweep_currentc = nan(length(llas_time),29);
-    % temperaturec = nan(length(llas_time),1);
-    % ion_densityc = nan(length(llas_time),1);
-    % spacecraft_chargingc = nan(length(llas_time),1);
-    % rsquaredc = nan(length(llas_time),1);
-    % 
-    % sweep_timec(2:(length(sweep_time)-1),1) = sweep_time(1:(length(sweep_time)-2),1);
-    % sweep_timec(1,1) = sweep_time(length(sweep_time)-1,1);
-    % sweep_time = sweep_timec;
-    % clear sweep_timec;
-    % 
-    % missing_sweepsc(i) = missing_sweeps(sweep_index);
-    % signalc(i,:) = signal(sweep_index,:);
-    % raw_adcc(i,:) = raw_adc(sweep_index,:);
-    % sweep_voltagec(i,:) = sweep_voltage(sweep_index,:);
-    % sweep_currentc(i,:) = sweep_current(sweep_index,:);
-    % temperaturec(i) = temperature(sweep_index);
-    % ion_densityc(i) = ion_density(sweep_index);
-    % spacecraft_chargingc(i) = spacecraft_charging(sweep_index);
-    % rsquaredc(i) = rsquared(sweep_index);        
-
     %% Put new arrays into the NetCDF file              
-                    %Create L3 File
-                    copyfile(sourceFileName,ncfilename);     
-
                     % Open the L3 file      
                     ncid = netcdf.open(ncfilename,'NC_WRITE');    
 
@@ -266,8 +227,8 @@ function STPSat3_L2_to_L3_Parallel_processor_function2(parint,NC_source_folder_n
         EM_name =  ME.stack(1).name;
         EM_line = ME.stack(1).line;
         EM = ME.message;
-        error_filename = strcat(L3_folder_name,'\Error Codes\',strrep(sourceFileName,'_L2.nc','_L3_error.txt'));
-        fileID = fopen(error_filename,'w');
+        error_fullfilename = strcat(NC_folder_name,'\L3 Error Codes\',strrep(dest_fullfilename,'.nc','_L3_error.txt'));
+        fileID = fopen(error_fullfilename,'w');
         if( isenum(i) )
             fprintf(fileID,strcat('Sweepnumber: ',num2str(i)));
             fprintf(fileID,'\r\n');
@@ -294,7 +255,7 @@ function STPSat3_L2_to_L3_Parallel_processor_function2(parint,NC_source_folder_n
         fprintf(2,['Broke on active_file: ',num2str(parint),', Filename: ',sourceFileName,' Sweepnumber: ',num2str(i),'\r']);
         
         % Create and Add to error file
-        fprintf(error_filename,char(NC_error));
+        fprintf(error_fullfilename,char(NC_error));
         
         try
             netcdf.close(ncid);

@@ -26,8 +26,40 @@ files = strcat(L3_folder_name,'\','*.nc');
 file_list = dir(files);
 [file_number,~] = size(file_list);  
 good_points = zeros(file_number,1);
-Map_folder_name = uigetdir('','Select A Overflight Data.');
+Map_folder_name = uigetdir('','Select A Overflight Image Data Folder.');
 files_processed = 0;
+
+ try
+    stat_var = 0;
+    Processing_Status = ncread(sourceFileName,'Processing_Status');
+    for i=1:length(Processing_Status)
+        if(strcmp(Processing_Status(i,:),'L3a'))  %The file was processed on the script created 7-Dec-18
+            stat_var = 1;
+            break;
+        end
+    end
+
+    if(~stat_var)
+        info = ncinfo(sourceFileName);
+        num_vars = length(info.Variables);
+        for i=1:num_vars
+            var_name = info.Variables(i).Name;
+            if(strcmp(var_name(1:2),'3_'))
+                stat_var = 1;
+                for j=1:length(Processing_Status)          
+                    if(strcmp(Processing_Status(j,:),'NYR'))
+                        break;
+                    end
+                end
+                Processing_Status(j,:) = 'L3a';
+                ncwrite(sourceFileName,'Processing_Status',Processing_Status);                         
+                break;                   
+            end
+        end     
+    end
+catch
+    stat_var = 0;
+ end
 
 for active_file = 1:file_number
     try

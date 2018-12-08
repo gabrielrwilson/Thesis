@@ -18,7 +18,7 @@ clc;
 
 %% Open NetCDF folders
 
-NC_source_folder_name = uigetdir('','Select folder that contains the netcdf files.');
+NC_folder_name = uigetdir('','Select folder that contains the netcdf files.');
 cd(NC_folder_name);
 file_list = dir('*.nc');
 [num_files,~] = size(file_list);    
@@ -29,6 +29,6 @@ delete(gcp('nocreate'));
 par_info = parpool();
 workers = par_info.NumWorkers;
 
-parfor parint = 1:num_L2_files   
-    aSTPSat3_L2_to_L3_Parallel_processor_function2(parint,NC_source_folder_name,LLA_pathname);
+parfor parint = 1:num_files   
+    STPSat3_L2_to_L3_Parallel_processor_function2(parint,NC_folder_name,LLA_pathname);
 end
