@@ -29,6 +29,6 @@ delete(gcp('nocreate'));
 par_info = parpool();
 workers = par_info.NumWorkers;
 
-parfor parint = 1:num_files   
+parfor parint = 19:num_files   
     STPSat3_L2_to_L3_Parallel_processor_function2(parint,NC_folder_name,LLA_pathname);
 end

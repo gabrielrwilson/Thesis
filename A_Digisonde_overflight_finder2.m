@@ -35,7 +35,7 @@ for active_file = 1:file_number
         sourceFilePath=strcat(NC_folder_name,'\',sourceFileName);
         disp_str = strrep(sourceFileName,'STPSat3_DATA_','');
         disp_str = strrep(disp_str,'_L3.nc','');
-        disp(disp_str)
+        disp(['Processing ', disp_str]);
         
         try
             stat_var = 0;
@@ -70,7 +70,7 @@ for active_file = 1:file_number
         end
 
         if(stat_var)
-            disp([sourceFileName, ' A file exists, skipping to next file.']);
+            disp([sourceFileName, ' A data exists, skipping to next file.']);
         else
             lat_array=ncread(sourceFilePath,'3_Latitude');
             lon_array=ncread(sourceFilePath,'3_Longitude');

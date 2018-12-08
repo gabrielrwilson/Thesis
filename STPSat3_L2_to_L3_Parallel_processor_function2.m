@@ -43,8 +43,6 @@ function STPSat3_L2_to_L3_Parallel_processor_function2(parint,NC_folder_name,LLA
         catch
             stat_var = 0;
         end
-
-
         
         if(stat_var)
             disp(['Skipping file ', num2str(parint) ,'. NC file already processed for L3s']);
@@ -221,7 +219,7 @@ function STPSat3_L2_to_L3_Parallel_processor_function2(parint,NC_folder_name,LLA
         end    
         close all;
         disp(['File ',num2str(parint),' complete']);
-        disp([num2str(L3_file_number/NC_file_number),'% complete']);
+%         disp([num2str(parint/NC_file_number),'% complete']);
     catch ME
         % Some error occurred if you get here.
         EM_name =  ME.stack(1).name;
