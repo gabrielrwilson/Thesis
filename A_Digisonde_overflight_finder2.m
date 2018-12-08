@@ -53,15 +53,20 @@ for active_file = 1:file_number
                 for i=1:num_vars
                     var_name = info.Variables(i).Name;
                     if(strcmp(var_name(1:2),'A_'))
+%                         break;
                         stat_var = 1;
                         for j=1:length(Processing_Status)          
-                            if(strcmp(Processing_Status(j,:),'NYR'))
+                            if(strcmp(Processing_Status(j,:),'L3a'))
                                 break;
                             end
                         end
-                        Processing_Status(j,:) = 'ADa';
-                        ncwrite(sourceFilePath,'Processing_Status',Processing_Status);                         
-                        break;                   
+                        if(j==50)
+                            stat_var=2;
+                        else
+                            Processing_Status(j+1,:) = 'ADa';
+                            ncwrite(sourceFilePath,'Processing_Status',Processing_Status);                         
+                            break;     
+                        end
                     end
                 end     
             end
@@ -69,8 +74,10 @@ for active_file = 1:file_number
             stat_var = 0;
         end
 
-        if(stat_var)
+        if(stat_var==1)
             disp([sourceFileName, ' A data exists, skipping to next file.']);
+        elseif(stat_var==2)
+            disp(['Files have not been processed for L3 yet, skipping.']);
         else
             lat_array=ncread(sourceFilePath,'3_Latitude');
             lon_array=ncread(sourceFilePath,'3_Longitude');
@@ -145,7 +152,6 @@ for active_file = 1:file_number
             windows_ursi = keyhole_ursi(1:unique_overflights,:);
 
             %Save to netcdf
-            copyfile(sourceFilePath,sourceFilePath);
             ncid = netcdf.open(sourceFilePath,'NC_WRITE');    
             ncwriteatt(sourceFilePath,'/','g_nc_creation_time',datestr(now));
 
@@ -206,7 +212,7 @@ for active_file = 1:file_number
             ncwriteatt(sourceFilePath,'A_access_lla_time','description','The epoch of each LLA point of over each access window');
             
             for i=1:length(Processing_Status)          
-                if(strcmp(Processing_Status(i,:),'NYR'))
+                if(strcmp(Processing_Status(i,:),'L3a'))
                     break;
                 end
             end

@@ -5,7 +5,7 @@ function STPSat3_L2_to_L3_Parallel_processor_function2(parint,NC_folder_name,LLA
     try        
         cd(NC_folder_name);
         NC_file_list = dir('*.nc');
-        [NC_file_number,~] = size(NC_file_list);
+%         [NC_file_number,~] = size(NC_file_list);
         
         % Create the L3 netcdf filename
         disp(['Processing ' NC_file_list(parint).name '.']);
@@ -30,13 +30,17 @@ function STPSat3_L2_to_L3_Parallel_processor_function2(parint,NC_folder_name,LLA
                     if(strcmp(var_name(1:2),'3_'))
                         stat_var = 1;
                         for j=1:length(Processing_Status)          
-                            if(strcmp(Processing_Status(j,:),'NYR'))
+                            if(strcmp(Processing_Status(j,:),'L2a'))
                                 break;
                             end
                         end
-                        Processing_Status(j,:) = 'L3a';
-                        ncwrite(sourceFileName,'Processing_Status',Processing_Status);                         
-                        break;                   
+                        if(j==50)
+                            stat_var=2;
+                        else
+                            Processing_Status(j+1,:) = 'L3a';
+                            ncwrite(sourceFileName,'Processing_Status',Processing_Status);                         
+                            break;   
+                        end
                     end
                 end     
             end
@@ -44,8 +48,10 @@ function STPSat3_L2_to_L3_Parallel_processor_function2(parint,NC_folder_name,LLA
             stat_var = 0;
         end
         
-        if(stat_var)
+        if(stat_var==1)
             disp(['Skipping file ', num2str(parint) ,'. NC file already processed for L3s']);
+        elseif(stat_var ==2)
+            disp('Files have not been processed for L2 yet, skipping.');
         else
             disp(['File ',num2str(parint),': Checking for LLAs.']);
 
@@ -185,30 +191,30 @@ function STPSat3_L2_to_L3_Parallel_processor_function2(parint,NC_folder_name,LLA
                     end
     %% Put new arrays into the NetCDF file              
                     % Open the L3 file      
-                    ncid = netcdf.open(ncfilename,'NC_WRITE');    
+                    ncid = netcdf.open(sourceFileName,'NC_WRITE');    
 
-                    nccreate(ncfilename,'3_Latitude','Dimensions',{'Seconds_in_day',length(llas_alt)});
-                    ncwrite(ncfilename,'3_Latitude',llas_lat);
-                    ncwriteatt(ncfilename,'3_Latitude','description','The geodesic latitude in degrees.');
+                    nccreate(sourceFileName,'3_Latitude','Dimensions',{'Seconds_in_day',length(llas_alt)});
+                    ncwrite(sourceFileName,'3_Latitude',llas_lat);
+                    ncwriteatt(sourceFileName,'3_Latitude','description','The geodesic latitude in degrees.');
 
-                    nccreate(ncfilename,'3_Longitude','Dimensions',{'Seconds_in_day',length(llas_alt)});
-                    ncwrite(ncfilename,'3_Longitude',llas_lon);
-                    ncwriteatt(ncfilename,'3_Longitude','description','The geodesic longitude in degrees.');
+                    nccreate(sourceFileName,'3_Longitude','Dimensions',{'Seconds_in_day',length(llas_alt)});
+                    ncwrite(sourceFileName,'3_Longitude',llas_lon);
+                    ncwriteatt(sourceFileName,'3_Longitude','description','The geodesic longitude in degrees.');
 
-                    nccreate(ncfilename,'3_Altitude','Dimensions',{'Seconds_in_day',length(llas_alt)});
-                    ncwrite(ncfilename,'3_Altitude',llas_alt);
-                    ncwriteatt(ncfilename,'3_Altitude','description','The altitude in kilometers.');
+                    nccreate(sourceFileName,'3_Altitude','Dimensions',{'Seconds_in_day',length(llas_alt)});
+                    ncwrite(sourceFileName,'3_Altitude',llas_alt);
+                    ncwriteatt(sourceFileName,'3_Altitude','description','The altitude in kilometers.');
 
-                    nccreate(ncfilename,'3_LLA_time','Dimensions',{'Seconds_in_day',length(llas_alt)});
-                    ncwrite(ncfilename,'3_LLA_time',llas_time);
-                    ncwriteatt(ncfilename,'3_LLA_time','description','The time associated with the LLA data.');
+                    nccreate(sourceFileName,'3_LLA_time','Dimensions',{'Seconds_in_day',length(llas_alt)});
+                    ncwrite(sourceFileName,'3_LLA_time',llas_time);
+                    ncwriteatt(sourceFileName,'3_LLA_time','description','The time associated with the LLA data.');
 
-                    nccreate(ncfilename,'3_eclipse','Dimensions',{'Seconds_in_day',length(llas_alt)});
-                    ncwrite(ncfilename,'3_eclipse',eclipse);
-                    ncwriteatt(ncfilename,'3_eclipse','description','1 when the space craft is in eclipse');
+                    nccreate(sourceFileName,'3_eclipse','Dimensions',{'Seconds_in_day',length(llas_alt)});
+                    ncwrite(sourceFileName,'3_eclipse',eclipse);
+                    ncwriteatt(sourceFileName,'3_eclipse','description','1 when the space craft is in eclipse');
                     
                     for i=1:length(Processing_Status)          
-                        if(strcmp(Processing_Status(i,:),'NYR'))
+                        if(strcmp(Processing_Status(i,:),'L2a'))
                             break;
                         end
                     end
