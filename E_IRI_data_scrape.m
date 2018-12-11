@@ -48,7 +48,12 @@ Ne_Dreg = [];
 Te_top = [];
 ioncomp = [];
 
-for active_file = 1:Data_file_number
+delete(gcp('nocreate'));
+par_info = parpool();
+workers = par_info.NumWorkers;
+
+clear i;
+parfor active_file = 1:Data_file_number
     
 %% Open the netcdf
     data_FileName=Data_file_list(active_file).name;
@@ -370,7 +375,7 @@ for active_file = 1:Data_file_number
                             end
                         disp(['Creating next IRI query for overflight ', num2str(i),'.']);
                         else
-                            disp(['Not enough Digisonde data, skipping to next data set']);
+                            disp('Not enough Digisonde data, skipping to next data set');
                         end
                     end
 
@@ -588,16 +593,16 @@ for active_file = 1:Data_file_number
         fprintf(fileID,'\r\n');          
         fclose(fileID);
 
-        NC_error(1,1) = {['Sweepnumber: ',num2str(i)]};
-        NC_error(2,1) = {['Active_file: ',num2str(active_file)]};
-        NC_error(3,1) = {['SourceFileName: ',data_FileName]};
-        NC_error(4,1) = {['Error Message: ',EM]};
-        NC_error(5,1) = {['On Line: ',num2str(EM_line)]};    
-        NC_error(6,1) = {['Error Name: ',EM_name]};   
+%         NC_error(1,1) = {['Sweepnumber: ',num2str(i)]};
+%         NC_error(2,1) = {['Active_file: ',num2str(active_file)]};
+%         NC_error(3,1) = {['SourceFileName: ',data_FileName]};
+%         NC_error(4,1) = {['Error Message: ',EM]};
+%         NC_error(5,1) = {['On Line: ',num2str(EM_line)]};    
+%         NC_error(6,1) = {['Error Name: ',EM_name]};   
         fprintf(2,['Broke on active_file: ',num2str(active_file),', Filename: ',data_FileName,' Sweepnumber: ',num2str(i),'\r']);
         fprintf(2,['Error Message: ', EM, '\r']);
         % Create and Add to error file
-        fprintf(error_filename,char(NC_error));
+%         fprintf(error_filename,char(NC_error));
 
         try
             netcdf.close(ncid);
@@ -607,6 +612,6 @@ for active_file = 1:Data_file_number
         end
     end
     
-    files_processed=files_processed+1;
-    disp([num2str(files_processed) ' files complete.']);
+%     files_processed=files_processed+1;
+%     disp([num2str(files_processed) ' files complete.']);
 end       

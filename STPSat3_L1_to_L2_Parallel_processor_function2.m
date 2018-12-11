@@ -10,7 +10,8 @@ function STPSat3_L1_to_L2_Parallel_processor_function2(parint,NC_source_folder_n
     % 11-March, 2018
     %   improve the guessing routine for aa, bb and dd
     %   Comprehend and fix the drifted maxwellian fitting routine options
-    %   Adjust fit data so that all coefficients are near th same order of magnitude
+    %   Adjust fit data so that all coefficients are near th same order of
+    %   magnitude
     % 12-March, 2018
     %   Reviewed Drifted Maxwellian fitting routine
     %   cleaned up document
@@ -37,7 +38,8 @@ function STPSat3_L1_to_L2_Parallel_processor_function2(parint,NC_source_folder_n
         nc_file_list = dir(nc_files);
         filename = nc_file_list(parint).name;    
         fullfilename = strcat(NC_source_folder_name,'\',filename);
-        disp(['Process NC file number ', num2str(parint), '. The filename is: ', filename]);
+        disp(['Process NC file number ', num2str(parint),...
+            '. The filename is: ', filename]);
         
     %% Determine what the processing status of the file    
         info = ncinfo(fullfilename);
@@ -53,16 +55,19 @@ function STPSat3_L1_to_L2_Parallel_processor_function2(parint,NC_source_folder_n
         if(stat_var == 0)
             Processing_Status = char(ones(50,1)*'NYR');
             Processing_Status(1,:) = 'L1a';
-            nccreate(fullfilename,'Processing_Status','Dimensions',{'50',50,'3',3},'Datatype','char');
+            nccreate(fullfilename,'Processing_Status','Dimensions',...
+                {'50',50,'3',3},'Datatype','char');
             ncwrite(fullfilename,'Processing_Status',Processing_Status);
-            ncwriteatt(fullfilename,'Processing_Status','description','A log of which processing scrips have been run on the data.');
+            ncwriteatt(fullfilename,'Processing_Status','description',...
+                'A log of which processing scrips have been run on the data.');
         else
             Processing_Status = ncread(fullfilename,'Processing_Status');
         end
 
         stat_var = 0;
         for i=1:length(Processing_Status)
-            if(strcmp(Processing_Status(i,:),'L2a'))  %The file was processed on the script created 7-Dec-18
+            %The file was processed on the script created 7-Dec-18
+            if(strcmp(Processing_Status(i,:),'L2a'))  
                 stat_var = 1;
             end
         end
@@ -71,7 +76,8 @@ function STPSat3_L1_to_L2_Parallel_processor_function2(parint,NC_source_folder_n
                 dest_filename = strrep(filename,'_D','');
                 dest_filename = strrep(dest_filename,'_E','');
                 dest_filename = strrep(dest_filename,'_L1','');
-                dest_fullfilename = strcat(NC_destination_folder_name,'\',dest_filename);                
+                dest_fullfilename = strcat(NC_destination_folder_name,...
+                    '\',dest_filename);                
         end        
         
         if( (stat_var)||(exist(dest_fullfilename)==2) )
@@ -92,7 +98,8 @@ function STPSat3_L1_to_L2_Parallel_processor_function2(parint,NC_source_folder_n
             VELOCITY = 7612.36; % m/s, spacecraft velocity, calculated.
             Kb = 8.6173303*10^-5;  %Boltzman Constant in eV/K
             m_ion = 2.66e-26;  %Mass of O+ ion
-            ion_KE = 1/2*m_ion*VELOCITY^2;  %The added kinetic energy of the ions due to the spacecraft
+            ion_KE = 1/2*m_ion*VELOCITY^2;  
+            %The added kinetic energy of the ions due to the spacecraft
         % Calculate the Voltage/Energy for each sweep point 
         
             voltage=zeros(1,MAX_NUM_SWEEP_STEPS);
@@ -110,7 +117,8 @@ function STPSat3_L1_to_L2_Parallel_processor_function2(parint,NC_source_folder_n
 %             hold on
 %             yfit = ThroughPut_line(1)*x+ThroughPut_line(2);
 %             plot(x,yfit,'r-.');
-            Through_put_VS_energy = ThroughPut_line(1)*energy+ThroughPut_line(2);
+            Through_put_VS_energy = ThroughPut_line(1)*energy+...
+                ThroughPut_line(2);
 
             raw_data = ncread(fullfilename,'1_sweep_raw_data');
             data_date_index = ncread(fullfilename,'1_data_date_index');
@@ -136,8 +144,9 @@ function STPSat3_L1_to_L2_Parallel_processor_function2(parint,NC_source_folder_n
             % test_index = [438 460 479 529 540 599 629];
 
             %% Calculations to perform
-            % 1) Before it was saved on the instrument the raw was  padded with 0x8001
-            %to prevent any 0 values from begin dropped in the saving process
+            % 1) Before it was saved on the instrument the raw was  padded 
+            % with 0x8001 to prevent any 0 values from begin dropped in the
+            % saving process
             %   --1 subtract 0x8001
             % 2) The ADC bit shifts the data by 1 to rhe left and pads the top with
             % three zeros.
