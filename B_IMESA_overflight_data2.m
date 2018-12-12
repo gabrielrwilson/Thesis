@@ -21,6 +21,7 @@
 clearvars;
 close('all');
 fclose('all');
+clc
 
 %% Read in all of L3 NetCDF files
 NC_folder_name = uigetdir('','Select netcdf Data directory');
@@ -62,9 +63,9 @@ for active_file = 1:NC_file_number
         end  
         
         if(stat_var==1)
-            disp([ncfilename, ' A data exists, skipping to next file.']);
+            disp([filename, ': B data exists, skipping to next file.']);
         elseif(stat_var==2)
-            disp('Files have not been processed for L3 yet, skipping.');
+            disp([filename, ': Files have not been processed for A yet, skipping.']);
         else
             date_string = strrep(filename,'STPSat3_','');
             date_string = strrep(date_string,'.nc','');
@@ -1220,7 +1221,6 @@ for active_file = 1:NC_file_number
             Processing_Status(i+1,:) = 'BDa';
             ncwrite(ncfilename,'Processing_Status',Processing_Status);
 
-
             files_processed=files_processed+1;
             disp([num2str(files_processed) ' files complete.']);
         end
@@ -1239,7 +1239,7 @@ for active_file = 1:NC_file_number
         fprintf(fileID,'\r\n');
         fprintf(fileID,strcat('Active_file: ',num2str(active_file)));
         fprintf(fileID,'\r\n');
-        fprintf(fileID,strcat('SourceFileName: ',sourceFileName));
+        fprintf(fileID,strcat('Filename: ',filename));
         fprintf(fileID,'\r\n');
         fprintf(fileID,strcat('Error Message: ',EM));
         fprintf(fileID,'\r\n');
@@ -1251,7 +1251,7 @@ for active_file = 1:NC_file_number
                 
         NC_error(1,1) = {['Sweepnumber: ',num2str(i)]};
         NC_error(2,1) = {['Active_file: ',num2str(active_file)]};
-        NC_error(3,1) = {['SourceFileName: ',sourceFileName]};
+        NC_error(3,1) = {['Filename: ',filename]};
         NC_error(4,1) = {['Error Message: ',EM]};
         NC_error(5,1) = {['On Line: ',num2str(EM_line)]};    
         NC_error(6,1) = {['Error Name: ',EM_name]};   
