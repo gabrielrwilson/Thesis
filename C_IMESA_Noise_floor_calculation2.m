@@ -34,6 +34,7 @@ for active_file = 1:NC_file_number
 %% Open the IMESA data netcdf
     filename=NC_file_list(active_file).name;
     ncfilename = strcat(NC_folder_name,'\',filename);    
+    disp(['Processing ', filename]);
 
     try
         stat_var = 0;
@@ -47,7 +48,7 @@ for active_file = 1:NC_file_number
 
         if(~stat_var)
             for j=1:length(Processing_Status)          
-                if(strcmp(Processing_Status(j,:),'BIa'))
+                if(strcmp(Processing_Status(j,:),'BDa'))
                     break;
                 end
             end
@@ -222,58 +223,58 @@ for active_file = 1:NC_file_number
                     %ratio fo sweeps with a good dispersio nto total sweeps
 
     %% Create Plots                
-                    % Plot normalized histograms of each energy band
-                    h1 = figure(1);
-                    side = 0.1;
-                    width = 0.05;
-                    top = .895 - width;
-                    m=1;
-                    n=0;
-                    subplot('Position', [0.1 0.90 0.875 0]);
-                    set(gca,'XTick',[]);
-                    t1=title({...
-                    'Histogram of Sweep Dispersion at Each Energy Band',...
-                    ['Overflight ',num2str(i),32,32, plot_day]});
-                    x_max = ceil(nanmax(nanmax(norm_sweeps(i,:,2:29))));               
-                    xtick = 1:2:x_max-1;
-                    edges = 0:0.2:x_max;
-                    for k = 2:steps
-                        subplot('Position', [...
-                            side top-(width+.005)*(m-1) .4 width]);
-                        try
-                            histogram(abs(norm_sweeps(i,:,k)),edges);
-                        catch
-                        end
-                        set(gca,'XLim',[0 x_max]);
-                        set(gca,'XTick',xtick);
-                        set(gca,'Ylim',[-.1 100]);
-                        set(gca,'YTick',[]);
-                        set(gca,'XGrid','on');
-                        set(gca,'GridAlpha',1);
-                        m=m+1;
-                        n=n+1;
-                        if(k==15)
-                            side = 0.575;
-                            xlabel('Standard Deviations')
-                            m=1;
-                        end            
-                        if n==1
-                            if(k==8)
-                                ylabel(...
-                                {'Number of Values within Ion Energy Band [N]',...
-                                [num2str(round(plate_energy(k),0)), ' eV']});
-                            else
-                                ylabel([num2str(round(plate_energy(k),0)), ' eV']);
-                            end
-                        elseif(n==3)
-    %                         set(gca,'YAxisLocation','right')
-    %                         set(gca,'YTick',[5 20]);
-                            n=0;
-                        end
-                    end
-                    xlabel('Standard Deviations');
-                    saveas(h1,strcat(dirname,'\',plotname1,num2str(i),'.tif'));
-                    close(gcf);
+%                     % Plot normalized histograms of each energy band
+%                     h1 = figure(1);
+%                     side = 0.1;
+%                     width = 0.05;
+%                     top = .895 - width;
+%                     m=1;
+%                     n=0;
+%                     subplot('Position', [0.1 0.90 0.875 0]);
+%                     set(gca,'XTick',[]);
+%                     t1=title({...
+%                     'Histogram of Sweep Dispersion at Each Energy Band',...
+%                     ['Overflight ',num2str(i),32,32, plot_day]});
+%                     x_max = ceil(nanmax(nanmax(norm_sweeps(i,:,2:29))));               
+%                     xtick = 1:2:x_max-1;
+%                     edges = 0:0.2:x_max;
+%                     for k = 2:steps
+%                         subplot('Position', [...
+%                             side top-(width+.005)*(m-1) .4 width]);
+%                         try
+%                             histogram(abs(norm_sweeps(i,:,k)),edges);
+%                         catch
+%                         end
+%                         set(gca,'XLim',[0 x_max]);
+%                         set(gca,'XTick',xtick);
+%                         set(gca,'Ylim',[-.1 100]);
+%                         set(gca,'YTick',[]);
+%                         set(gca,'XGrid','on');
+%                         set(gca,'GridAlpha',1);
+%                         m=m+1;
+%                         n=n+1;
+%                         if(k==15)
+%                             side = 0.575;
+%                             xlabel('Standard Deviations')
+%                             m=1;
+%                         end            
+%                         if n==1
+%                             if(k==8)
+%                                 ylabel(...
+%                                 {'Number of Values within Ion Energy Band [N]',...
+%                                 [num2str(round(plate_energy(k),0)), ' eV']});
+%                             else
+%                                 ylabel([num2str(round(plate_energy(k),0)), ' eV']);
+%                             end
+%                         elseif(n==3)
+%     %                         set(gca,'YAxisLocation','right')
+%     %                         set(gca,'YTick',[5 20]);
+%                             n=0;
+%                         end
+%                     end
+%                     xlabel('Standard Deviations');
+%                     saveas(h1,strcat(dirname,'\',plotname1,num2str(i),'.tif'));
+%                     close(gcf);
                 end
             end
 
@@ -350,45 +351,45 @@ for active_file = 1:NC_file_number
             disp([num2str(files_processed) ' files complete.']);
             disp('______________________________________________________');
         catch ME
-        % Some error occurred if you get here.
-        EM_name =  ME.stack(1).name;
-        EM_line = ME.stack(1).line;
-        EM = ME.message;
-        error_filename = strcat(NC_folder_name,'\C Error Codes\',...
-            strrep(filename,'.nc','_C_error.txt'));
-        fileID = fopen(error_filename,'w');
-        if( ~isenum(i) )
-            i=-1;
-        end
-        fprintf(fileID,strcat('Sweepnumber: ',num2str(i)));
-        fprintf(fileID,'\r\n');
-        fprintf(fileID,strcat('Active_file: ',num2str(active_file)));
-        fprintf(fileID,'\r\n');
-        fprintf(fileID,strcat('SourceFileName: ',sourceFileName));
-        fprintf(fileID,'\r\n');
-        fprintf(fileID,strcat('Error Message: ',EM));
-        fprintf(fileID,'\r\n');
-        fprintf(fileID,strcat('On Line: ',num2str(EM_line)));
-        fprintf(fileID,'\r\n');    
-        fprintf(fileID,strcat('Error Name: ',EM_name));
-        fprintf(fileID,'\r\n');          
-        fclose(fileID);
-                
-        NC_error(1,1) = {['Sweepnumber: ',num2str(i)]};
-        NC_error(2,1) = {['Active_file: ',num2str(active_file)]};
-        NC_error(3,1) = {['SourceFileName: ',sourceFileName]};
-        NC_error(4,1) = {['Error Message: ',EM]};
-        NC_error(5,1) = {['On Line: ',num2str(EM_line)]};    
-        NC_error(6,1) = {['Error Name: ',EM_name]};   
-        fprintf(2,['Error on worker ', num2str(active_file),...
-            ' in function ', EM_name, ' at line ', num2str(EM_line),...
-            '. Message: ', EM,'\r']);           
-        fprintf(2,['Broke on active_file: ',num2str(active_file),...
-            ', Filename: ',sourceFileName,' Sweepnumber: ',...
-            num2str(i),'\r']);
-        
-        % Create and Add to error file
-        fprintf(error_filename,char(NC_error));  
+            % Some error occurred if you get here.
+            EM_name =  ME.stack(1).name;
+            EM_line = ME.stack(1).line;
+            EM = ME.message;
+            error_filename = strcat(NC_folder_name,'\C Error Codes\',...
+                strrep(filename,'.nc','_C_error.txt'));
+            fileID = fopen(error_filename,'w');
+            if( ~isenum(i) )
+                i=-1;
+            end
+            fprintf(fileID,strcat('Sweepnumber: ',num2str(i)));
+            fprintf(fileID,'\r\n');
+            fprintf(fileID,strcat('Active_file: ',num2str(active_file)));
+            fprintf(fileID,'\r\n');
+            fprintf(fileID,strcat('filename: ',filename));
+            fprintf(fileID,'\r\n');
+            fprintf(fileID,strcat('Error Message: ',EM));
+            fprintf(fileID,'\r\n');
+            fprintf(fileID,strcat('On Line: ',num2str(EM_line)));
+            fprintf(fileID,'\r\n');    
+            fprintf(fileID,strcat('Error Name: ',EM_name));
+            fprintf(fileID,'\r\n');          
+            fclose(fileID);
+
+            NC_error(1,1) = {['Sweepnumber: ',num2str(i)]};
+            NC_error(2,1) = {['Active_file: ',num2str(active_file)]};
+            NC_error(3,1) = {['filename: ',filename]};
+            NC_error(4,1) = {['Error Message: ',EM]};
+            NC_error(5,1) = {['On Line: ',num2str(EM_line)]};    
+            NC_error(6,1) = {['Error Name: ',EM_name]};   
+            fprintf(2,['Error on worker ', num2str(active_file),...
+                ' in function ', EM_name, ' at line ', num2str(EM_line),...
+                '. Message: ', EM,'\r']);           
+            fprintf(2,['Broke on active_file: ',num2str(active_file),...
+                ', Filename: ',filename,' Sweepnumber: ',...
+                num2str(i),'\r']);
+
+            % Create and Add to error file
+            fprintf(error_filename,char(NC_error));  
 
             try
                 netcdf.close(ncid);

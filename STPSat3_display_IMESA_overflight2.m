@@ -1,0 +1,437 @@
+%% Script Readme
+% Read in IMESA overflight netcdf
+% Read the IMESA times,densities, temperature, spacecraft charging, ADC counts and altitudes
+% Plot and display IMESA data for +/-100 minutes of overflight
+% User to rate IMESA data on scale below
+% Copy to new netcdf and add new data
+
+%% Preliminaries
+close all
+clearvars
+
+%% Open the nc source filename
+
+IMESA_Overflight_folder_name = uigetdir('','Select netcdf directory');
+Overflight_files = strcat(IMESA_Overflight_folder_name,'\','*.nc');
+file_list = dir(Overflight_files);
+[file_number,~] = size(file_list);
+
+Image_folder_name = uigetdir('','Select Heat Plots directory');
+
+for active_file = 1:file_number
+    sourceFileName = file_list(active_file).name;   
+    disp(['Processing ' file_list(active_file).name '.']);    
+    Full_sourceFileName = strcat(IMESA_Overflight_folder_name,'\',sourceFileName);
+
+%% This is where we extract into local variables what quantities to plot
+    try   
+
+        %% Make a directory for the day
+        filedate = strrep(sourceFileName,'STPSat3_','');
+        filedate = strrep(filedate,'.nc','');
+        dirname = strcat(Image_folder_name,'\',filedate);    
+        if( exist(dirname,'dir')~=7 )
+            mkdir(dirname);
+        end
+
+        % Window vars
+        data_time = ncread(Full_sourceFileName,'B_IMESA_data_window_time');%The UTC time (MATLAB format) of each sweep found.
+    %             data_time = ncread(Full_sourceFileName,'A_digisonde_access_times');
+        ursi = ncread(Full_sourceFileName,'A_digisonde_access_ursi');
+
+        %sweep vars
+        incident_ion_density = ncread(Full_sourceFileName,'B_Incident_ion_density');
+        plate_factor  = ncread(Full_sourceFileName,'2_Derived_plate_factor');
+        sweep_voltage = ncread(Full_sourceFileName,'1_plate_voltage');
+        sweep_times = ncread(Full_sourceFileName,'B_IMESA_window_time');
+
+        %fit vars
+        temperature = ncread(Full_sourceFileName,'B_IMESA_window_temperature');
+        ion_density = ncread(Full_sourceFileName,'B_IMESA_window_density');
+        spacecraft_charging = ncread(Full_sourceFileName,'B_IMESA_window_charging');
+        r_squared = ncread(Full_sourceFileName,'B_IMESA_window_rsquare');
+
+        %lla vars
+        lat = ncread(Full_sourceFileName,'B_IMESA_window_lat');
+        lon = ncread(Full_sourceFileName,'B_IMESA_window_lon');
+        alt = ncread(Full_sourceFileName,'B_IMESA_window_alt');
+        lla_time = ncread(Full_sourceFileName,'B_IMESA_window_lla_time');            
+        eclipse = ncread(Full_sourceFileName,'B_IMESA_window_eclipse');
+        
+        %quality vars
+        quality = ncread(Full_sourceFileName,'C_overflight_sweep_characteritics2');
+        dispersion = ncread(Full_sourceFileName,'C_dispersion');
+
+        [unique_overflights,window_points,num_steps] = size(incident_ion_density);    
+        %% Assemble complete arrays
+        plot_time = nan(unique_overflights,1201);%
+        plot_counts = nan(unique_overflights,1201,29);
+        plot_energy_density = nan(unique_overflights,1201,29);
+        plot_fit_time = nan(unique_overflights,1201);
+        plot_temperature = nan(unique_overflights,1201);
+        plot_ion_density = nan(unique_overflights,1201);
+        plot_reimann_ion_density = nan(unique_overflights,1201);
+        plot_charging = nan(unique_overflights,1201);
+        plot_rsquare = nan(unique_overflights,1201);
+        plot_lat = nan(unique_overflights,1201);
+        plot_lon = nan(unique_overflights,1201);
+        plot_alt = nan(unique_overflights,1201);
+        plot_lla_time = nan(unique_overflights,1201);    
+        good_IMESA_data = zeros(unique_overflights,1);
+
+        for i=1:unique_overflights
+        if(quality(i,6)>10 )
+            %Make the plot title
+            start_time = datestr(data_time(i,1),'dd mmm yyyy hh:MM:ss');
+            end_time = datestr(data_time(i,2),'dd mmm yyyy hh:MM:ss');            
+            plottitle = strcat('IMESA data over',32,ursi(i,:),' from ',32,start_time,' to ',32,end_time);
+            plotname = strrep(plottitle,' ','_');
+            plotname = strrep(plotname,':','');
+            plotname = strcat(dirname,'\',plotname);     
+            if( exist(strcat(plotname,'.tif'),'file')~=2 )
+
+    %            % Find Rejection for bad fits
+    %             temperature_r2_min = 0;
+    %             ion_density_r2_min = 0;
+    %             sc_charging_r2_min = 0;
+    % 
+    %             temperature_pass = nan(length(r_squared(i,:)),1);
+    %             ion_density_pass = nan(length(r_squared(i,:)),1);
+    %             spacecraft_charging_pass = nan(length(r_squared(i,:)),1);
+    %             for k = 1:length(r_squared(i,:))
+    %                 if( (~isnan(r_squared(i,k)))&&(abs(r_squared(i,k))<1) )
+    %                     all_fail = 0;
+    %                     if(r_squared(i,k) > temperature_r2_min)
+    %                         temperature_pass(k,1) = temperature(i,k); 
+    %                         all_fail = all_fail+1;
+    %                     end
+    % 
+    %                     if(r_squared(i,k) > ion_density_r2_min)
+    %                         ion_density_pass(k,1) = ion_density(i,k);
+    %                         all_fail = all_fail+1;
+    %                     end
+    % 
+    %                     if(r_squared(i,k) > sc_charging_r2_min)
+    %                         spacecraft_charging_pass(k,1) = -spacecraft_charging(i,k);
+    %                         all_fail = all_fail+1;
+    %                     end
+    % 
+    %                     if(all_fail == 3)
+    %                         sweep_times(i,k) = nan;
+    %                     end
+    %                 end
+    %             end
+                temperature_pass = temperature(i,:); 
+                ion_density_pass = ion_density(i,:);
+                spacecraft_charging_pass = -spacecraft_charging(i,:);
+
+                sweep_energy_plot = sweep_energy(2:29);
+                plot_time = sweep_times(i,:)';
+                plot_temperature = temperature_pass(1,:);
+                plot_ion_density = ion_density_pass(1,:);
+                plot_charging = -spacecraft_charging_pass(1,:);
+                plot_rsquare = r_squared(i,:);        
+                plot_counts = nan(28,length(incident_ion_density));
+                plot_energy_density = nan(28,length(incident_ion_density));
+                for j=1:window_points
+                    plot_counts(:,j) = incident_ion_density(i,j,2:29);
+                    plot_energy_density(:,j) = incident_ion_density(i,j,2:29);
+                end     
+                
+                % Trying out to see how the total density compares to the
+                % riemann sum of the energy densty at each of the steps
+                for j=1:window_points
+                    plot_reimann_ion_density(i,j) = nansum(plot_energy_density(:,j));                    
+                end
+
+
+                % Find and remove NaNs from time_plot
+                time_plot_nans = find(~isnan(plot_time));
+                if( ~isempty(time_plot_nans) ) 
+                    plot_time = plot_time(time_plot_nans,1);
+                    plot_temperature = plot_temperature(1,time_plot_nans);
+                    plot_ion_density = plot_ion_density(1,time_plot_nans);
+                    plot_charging = plot_charging(1,time_plot_nans);
+                    plot_rsquare = plot_rsquare(1,time_plot_nans);        
+                    plot_counts = plot_counts(:,time_plot_nans);
+                    plot_ion_current = plot_energy_density(:,time_plot_nans);
+                    plot_reimann_ion_density = plot_reimann_ion_density(1,time_plot_nans);
+                    
+                    % Setup the LLA's
+                    plot_lat = lat(i,:);
+                    plot_lon = lon(i,:);
+                    plot_alt = alt(i,:);
+                    plot_lla_time = lla_time(i,:); 
+                    plot_eclipse = eclipse(i,:);
+                   
+            % Plot: this is where I start plotting a pretty summary of each overflight +/- 100min.
+                    energy_axis=zeros(5,1);
+                    for j=1:5
+                        energy_axis(j) = sweep_energy(1+(j-1)*7);
+                    end
+                    energy_axis = round(energy_axis);  
+
+                    x_tick_num = 4;
+                    time_start = data_time(i,1);
+                    time_end = data_time(i,2);
+                    time_interval = (abs((time_start-time_end)/x_tick_num));
+                    xticks = [time_start, time_start+time_interval,...
+                        time_start+time_interval*2, time_start+time_interval*3,...
+                        time_end-1/(24*6)];
+
+                    x_limits = [time_start time_end];
+                    figure(1);        
+
+                    [~,num_sweep_points] = size(plot_ion_current(1,:,:));
+                    num_nan_sweep_points = sum(sum(isnan(plot_ion_current(1,:,:))));
+
+                    if( num_nan_sweep_points < num_sweep_points )
+
+                        %Fill the heatmap with dummy data so it scales with the other
+                        %plots
+                        %Create dummy arrays
+                        fill_length = ceil((x_limits(2)-x_limits(1))*(24*60*6))+1;
+                        plot_time_fill = zeros(fill_length,1);
+                        plot_ion_current_fill = zeros(28,fill_length);
+                        plot_time_fill(1,1) = x_limits(1);
+                        plot_time_fill(fill_length,1) = x_limits(2);
+                        plot_ion_current_fill_value = nanmin(nanmin(plot_ion_current));
+                        for k=1:(fill_length-1)
+                            plot_time_fill(k,1) = k/(24*60*6)+x_limits(1);
+                            plot_ion_current_fill(:,k) = plot_ion_current_fill_value;
+                        end
+
+                        % populate with existing data at correct time stamps
+                        for k=1:length(plot_time)
+                            last_low = find(plot_time_fill < plot_time(k,1),1,'last');
+                            if(~isempty(last_low))
+                                plot_time_fill(last_low,1) = plot_time(k,1);
+                                plot_ion_current_fill(:,last_low) = plot_ion_current(:,k);  
+                            end
+                        end                  
+
+                        % Add eclipse
+                        % Can you use raw AtoD and Sum under curve?
+                        
+                        top=.66;
+                        delta = 0.29;
+                        h1 = subplot('Position', [.125 top .74 delta]);                                  
+                        clims_min = mode(nanmean(plot_ion_current))*.9975;
+                        clims_max = nanmean(nanmax(plot_ion_current))*1.01;
+                        clims = [clims_min clims_max];
+                        imagesc(plot_time_fill,sweep_energy_plot,plot_ion_current_fill,clims);
+                        colorMap = parula(2^12);
+                        colormap(colorMap);
+                        set(gca,'Ytick',energy_axis);
+                        set(gca,'YDir','normal');
+                        set(gca,'Xlim',x_limits);
+                        set(gca,'Xtick',[]);
+                        set(gca,'YAxisLocation','left')
+                        heaticks = round([clims_min (clims_max-clims_min)/2+clims_min clims_max]*1e-13,2);
+                        cposition=[.870 top .01 delta];
+                        c=colorbar('Position',cposition,'TickLabels',heaticks);
+                        clims_exp = floor(log10(clims_max));
+                        units = ['[m^{-3}]*10^{' num2str(clims_exp) '}'];
+                        clable = { 'Number Density' ; units };
+                        c.Label.String = clable;
+                        set(gca,'Ytick', [5 15 25 35]);
+                        ylabel({'Ion Energy'; '[eV]'});
+
+                        t1 = title(h1,plottitle);
+                        
+                        %Eclipse plot
+                        delta = 0.0075;
+                        top=top-delta;  
+                        h2 = subplot('Position', [.125 top .74 delta]);                
+                        eclipse_nan = find(~isnan(plot_eclipse));
+                        clims = [0 1];
+                        imagesc(plot_lla_time(1,eclipse_nan)',1,plot_eclipse(1,eclipse_nan),clims);
+                        set(gca,'Xtick',[]);
+                        set(gca,'YAxisLocation','right');
+                        ylabel('Eclipse')
+                        
+                        %Density Plot
+                        delta = 0.1;
+                        top=top-delta;                                
+                        %Do a little scaling to make plotting easier
+                        logless_plot_ion_density=plot_ion_density*10^(-13);                        
+                        h2 = subplot('Position', [.125 top .74 delta]);
+                        plot(plot_time,logless_plot_ion_density,'r.','MarkerSize',5);                  
+%                         plot(plot_time,plot_reimann_ion_density,'r.','MarkerSize',5);                  
+                        set(gca,'YAxisLocation','left');
+%                         set(gca,'YScale','log');
+                        set(gca,'Ylim',[2.25 3.75]);
+                        set(gca,'Ytick', [2.5 3 3.5]);
+                        set(gca,'Xtick',[]);
+                        set(gca,'Xlim',x_limits);
+                        label = {'Ion Density'; '[m^{-3}]*10^{13}'};
+                        ylabel(label);
+
+                        %SC Charging subplot
+                        top=top-delta;
+                        h3 = subplot('Position', [.125 top .74 delta]);
+                        plot(plot_time,plot_charging,' b.','MarkerSize',5);                
+                        set(gca,'Xtick',[]);
+                        set(gca,'Xlim',x_limits);
+                        set(gca,'YTickMode','manual');
+                        set(gca,'YTick',[0 10 20 30 40]);
+                        set(gca,'Ylim',[0 40]);
+                        set(gca,'YTickLabelMode','manual');
+                        yticklabels({'0', '-10', '-20', '-30', '-40'});
+                        set(gca,'YAxisLocation','right');
+                        ylabel({'Charging';  '[eV]'});
+
+                        % Temperature subplot
+                        delta = 0.05;
+                        top=top-delta;
+                        h4 = subplot('Position', [.125 top .74 delta]);
+                        plot(plot_time,plot_temperature,' r.','MarkerSize',5);
+                        ymin = 100;
+                        ymax = 3*10^3;
+                        set(gca,'Ylim',[ymin ymax]);
+                        set(gca,'Xlim',x_limits);
+                        set(gca,'YScale','log');
+                        set(gca,'Xtick',[]);
+                        set(gca,'Xlim',x_limits);
+                        set(gca,'YAxisLocation','left');
+                        ytick = [100 1000];
+                        set(gca,'Ytick',ytick);
+                        ylabel({'Log(T)'; '[K]'});
+
+                        % Position Plots   
+                        % Latitude
+                        delta = 0.105;
+                        top=top-delta;                
+                        h7 = subplot('Position',[.125 top .74 delta]);
+                        plot(plot_lla_time,plot_lat,'-r');
+                        set(gca,'Xtick',[]);
+                        set(gca,'Xlim',x_limits);
+                        set(gca,'YTick',[-40 0 40]);
+                        set(gca,'Ylim',[-50 50]);
+                        set(gca,'YAxisLocation','right')
+                        ylabel('Lat');
+
+                        % Longitude
+                        top=top-delta;
+                        h8 = subplot('Position',[.125 top .74 delta]);
+                        plot(plot_lla_time,plot_lon,'-r');
+                        set(gca,'Xtick',[]);
+                        set(gca,'Xlim',x_limits);
+                        set(gca,'YTick',[-180 0 180]);
+                        set(gca,'Ylim',[-190 190]);
+                        set(gca,'YAxisLocation','left')
+                        ylabel('Lon');   
+
+                        % Altitude
+                        delta = 0.05;
+                        top=top-delta;
+                        h6 = subplot('Position',[.125 top .74 delta]);
+                        plot(plot_lla_time,plot_alt,'-r');
+                        set(gca,'Xtick',[]);
+                        set(gca,'Xlim',x_limits);
+                        set(gca,'Ytick',[490 515]);    
+                        set(gca,'Ylim',[475 525]);
+                        set(gca,'YAxisLocation','right');
+                        ylabel('Alt');
+
+                        % Dummy Plot to set time axis
+                        top=top-.001;
+                        h9 = subplot('Position', [.125 top .74 .001]);
+                        plot(plot_lla_time,1);
+                        set(gca,'YTick',[]);
+                        set(gca,'Xlim',x_limits);
+                        set(gca,'XTick',xticks);
+                        datetick('x','hh:MM:ss','keeplimits','keepticks');
+                        xlabel('Time of Day [UTC]');    
+
+                        %% Get user input on data quality
+            %                 figure(1);
+            %                 disp(' ');
+            %                 disp(['Overflight ' num2str(i) ' of ' num2str(unique_overflights)]);        
+            %                 disp('Rate the data on a scale of 0 to 9, 0 being unusable, 10 being perfect. ');
+            %                 disp([start_time ' to ' end_time])
+            %                 read_num = 11;
+            %                 reads = 0:1:9;
+            %                 while(isempty(find(read_num==reads,1)))
+            %                     read_num = input('Rating := ');
+            %                     if(isempty(read_num))
+            %                         read_num = 11;
+            %                     end
+            %                 
+            %                 end
+            %                 good_IMESA_data(i,1) = read_num;
+            %                 disp(' ');
+
+%                         [row,column]=size(plot_ion_current);
+%                         good_IMESA_data(i,1)= round((column)/(length(plot_ion_current_fill)),2);
+% 
+%                         if(good_IMESA_data(i,1)>=5)
+%                             disp([filedate ' sweep ', num2str(i),...
+%                                 ' is rated ', num2str(good_IMESA_data(i,1))]);
+%                         end
+% 
+%                         % Save the plot to the day directory
+%                         poutfile=['print(''-dtiffn'',''',plotname,''')'];
+%                         eval(poutfile)
+                    else
+%                         good_IMESA_data(i,1) = 0;
+                    end        
+                else
+%                     good_IMESA_data(i,1) = 0;
+                end        
+            end
+            %Save the user data rating to
+        end
+        end
+%         try
+%             nccreate(Full_sourceFileName,'C_good_IMESA_data','Dimensions',{'unique_overflights',unique_overflights});
+%         catch
+% %             disp('Could not create C_good_IMESA_data');
+%         end
+% 
+%         ncwrite(Full_sourceFileName,'C_good_IMESA_data',good_IMESA_data);
+%         ncwriteatt(Full_sourceFileName,'C_good_IMESA_data','description','User rating on the IMESA data, 0 to 10');   
+%         disp('--------------------------------------------');
+    catch ME
+        % Some error occurred if you get here.
+        EM_name =  ME.stack(1).name;
+        EM_line = ME.stack(1).line;
+        EM = ME.message;
+        error_filename = strcat(Image_folder_name,'\Error Codes\',strrep(sourceFileName,'B.nc','error_Heat_plots.txt'));
+        fileID = fopen(error_filename,'w');
+        if( isenum(i) )
+            fprintf(fileID,strcat('Sweepnumber: ',num2str(i)));
+        end
+        fprintf(fileID,'\r\n');
+        fprintf(fileID,strcat('Active_file: ',num2str(active_file)));
+        fprintf(fileID,'\r\n');
+        fprintf(fileID,strcat('SourceFileName: ',sourceFileName));
+        fprintf(fileID,'\r\n');
+        fprintf(fileID,strcat('Error Message: ',EM));
+        fprintf(fileID,'\r\n');
+        fprintf(fileID,strcat('On Line: ',num2str(EM_line)));
+        fprintf(fileID,'\r\n');    
+        fprintf(fileID,strcat('Error Name: ',EM_name));
+        fprintf(fileID,'\r\n');          
+        fclose(fileID);
+
+        NC_error(1,1) = {['Sweepnumber: ',num2str(i)]};
+        NC_error(2,1) = {['Active_file: ',num2str(active_file)]};
+        NC_error(3,1) = {['SourceFileName: ',sourceFileName]};
+        NC_error(4,1) = {['Error Message: ',EM]};
+        NC_error(5,1) = {['On Line: ',num2str(EM_line)]};    
+        NC_error(6,1) = {['Error Name: ',EM_name]};   
+%         fprintf(2,['Error on worker ', num2str(parint), ' in function ', EM_name, ' at line ', num2str(EM_line), '. Message: ', EM,'\r']);           
+        fprintf(2,['Broke on active_file: ',num2str(active_file),', Filename: ',sourceFileName,' Sweepnumber: ',num2str(i),'\r']);
+        fprintf(2,EM);
+        % Create and Add to error file
+        fprintf(error_filename,char(NC_error));
+
+        try
+            netcdf.close(ncid);
+            netcdf.close(L1_ncid);   
+        catch
+        end
+    end
+end
+

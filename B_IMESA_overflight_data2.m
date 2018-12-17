@@ -42,7 +42,7 @@ for active_file = 1:NC_file_number
             Processing_Status = ncread(ncfilename,'Processing_Status');
             for i=1:length(Processing_Status)
                 %The file was processed on the script created 7-Dec-18
-                if(strcmp(Processing_Status(i,:),'BIa'))  
+                if(strcmp(Processing_Status(i,:),'BDa'))  
                     stat_var = 1;
                     break;
                 end
@@ -67,6 +67,7 @@ for active_file = 1:NC_file_number
         elseif(stat_var==2)
             disp([filename, ': Files have not been processed for A yet, skipping.']);
         else
+%             disp(['Precessing ', filename]);
             date_string = strrep(filename,'STPSat3_','');
             date_string = strrep(date_string,'.nc','');
             disp(['Processing ' date_string]);
@@ -1035,17 +1036,17 @@ for active_file = 1:NC_file_number
             clear IMESA_window_eclipse_time
             
             try
-                nccreate(ncfilename,'B_sweep_adc_output',...
+                nccreate(ncfilename,'B_sweep_ADC_output',...
                     'Dimensions',{'unique_overflights',...
-                    unique_overflights,'window_lla_points',...
-                    window_lla_points});
+                    unique_overflights,'window_points',window_points,...
+                    'sweep_points',29});
             catch
             end
-            IMESA_window_sweep_adc_output=nan(unique_overflights,...
-                window_lla_points);
+            IMESA_window_sweep_adc_output=nan(...
+                unique_overflights,window_points,29);
             for m=1:unique_overflights            
-                last_index = IMESA_lla_indexes(m,1)+1;
-                indexes = IMESA_lla_indexes(m,2:last_index);
+                last_index = IMESA_window_indexes(m,1)+1;                  
+                indexes = IMESA_window_indexes(m,2:last_index);
                 
                 sweep_adc_output1 = ncread(ncfilename,'2_sweep_adc_output');
 
@@ -1060,7 +1061,7 @@ for active_file = 1:NC_file_number
                     sweep_adc_output3 = ncread(previousfile_Path,...
                         '2_sweep_adc_output');
                 else
-                    sweep_adc_output3 = nan;
+                    sweep_adc_output3 = nan(1,29);
                 end   
 
                 sweep_adc_output = [sweep_adc_output3;...
@@ -1068,10 +1069,11 @@ for active_file = 1:NC_file_number
                 IMESA_window_sweep_adc_output(m,1:last_index-1,:) =...
                     sweep_adc_output(indexes,:);   
             end
-            ncwrite(ncfilename,'B_sweep_adc_output',...
+            ncwrite(ncfilename,'B_sweep_ADC_output',...
                 IMESA_window_sweep_adc_output);
-%             ncwriteatt(ncfilename,'B_sweep_adc_output',...
-%                 'description','+/-100 min of the overflight.');
+            ncwriteatt(ncfilename,'B_sweep_ADC_output',...
+                'description',...
+                'ADC value read in for a period +/-100 min of the overflight.');
             clear sweep_adc_output1
             clear sweep_adc_output2
             clear sweep_adc_output3
@@ -1081,15 +1083,14 @@ for active_file = 1:NC_file_number
             try
                 nccreate(ncfilename,'B_sweep_TIA_bias_voltage',...
                     'Dimensions',{'unique_overflights',...
-                    unique_overflights,'window_lla_points',...
-                    window_lla_points});
+                    unique_overflights,'window_points',window_points});
             catch
             end
-            IMESA_window_sweep_TIA_bias_voltage=nan(unique_overflights,...
-                window_lla_points);
+            IMESA_window_sweep_TIA_bias_voltage=nan(...
+                unique_overflights,window_points);
             for m=1:unique_overflights            
-                last_index = IMESA_lla_indexes(m,1)+1;
-                indexes = IMESA_lla_indexes(m,2:last_index);
+               last_index = IMESA_window_indexes(m,1)+1;                  
+                indexes = IMESA_window_indexes(m,2:last_index);
                 
                 sweep_TIA_bias_voltage1 = ncread(ncfilename,...
                     '2_sweep_TIA_bias_voltage');
@@ -1098,7 +1099,7 @@ for active_file = 1:NC_file_number
                     sweep_TIA_bias_voltage2 = ncread(subsequent_Path,...
                         '2_sweep_TIA_bias_voltage');
                 else
-                    sweep_TIA_bias_voltage2=nan(1,29);
+                    sweep_TIA_bias_voltage2=nan;
                 end
                 
                 if(previous_file_found)
@@ -1115,8 +1116,10 @@ for active_file = 1:NC_file_number
             end
             ncwrite(ncfilename,'B_sweep_TIA_bias_voltage',...
                 IMESA_window_sweep_TIA_bias_voltage);
-%             ncwriteatt(ncfilename,'B_sweep_TIA_bias_voltage',...
-%                 'description','+/-100 min of the overflight.');
+            ncwriteatt(ncfilename,'B_sweep_TIA_bias_voltage',...
+                'description',...
+                ['The quiescent voltage output of the TIA for ',...
+                ' a period +/-100 min of the overflight.']);
             clear sweep_TIA_bias_voltage1
             clear sweep_TIA_bias_voltage2
             clear sweep_TIA_bias_voltage3
@@ -1126,15 +1129,15 @@ for active_file = 1:NC_file_number
             try
                 nccreate(ncfilename,'B_Incident_ion_density',...
                     'Dimensions',{'unique_overflights',...
-                    unique_overflights,'window_lla_points',...
-                    window_lla_points});
+                    unique_overflights,'window_points',window_points,...
+                    'sweep_points',29});
             catch
             end
-            IMESA_window_Incident_ion_density=nan(unique_overflights,...
-                window_lla_points);
+            IMESA_window_Incident_ion_density=nan(...
+                unique_overflights,window_points,29);
             for m=1:unique_overflights            
-                last_index = IMESA_lla_indexes(m,1)+1;
-                indexes = IMESA_lla_indexes(m,2:last_index);
+               last_index = IMESA_window_indexes(m,1)+1;                  
+                indexes = IMESA_window_indexes(m,2:last_index);
                 
                 Incident_ion_density1 = ncread(ncfilename,...
                     '2_Incident_ion_density');
@@ -1150,7 +1153,7 @@ for active_file = 1:NC_file_number
                     Incident_ion_density3 = ncread(previousfile_Path,...
                         '2_Incident_ion_density');
                 else
-                    Incident_ion_density3 = nan;
+                    Incident_ion_density3 =nan(1,29);
                 end   
 
                 Incident_ion_density = [Incident_ion_density3;...
@@ -1160,8 +1163,10 @@ for active_file = 1:NC_file_number
             end
             ncwrite(ncfilename,'B_Incident_ion_density',...
                 IMESA_window_Incident_ion_density);
-%             ncwriteatt(ncfilename,'B_Incident_ion_density',...
-%                 'description','+/-100 min of the overflight.');
+            ncwriteatt(ncfilename,'B_Incident_ion_density',...
+                'description',...
+                ['The density of the ion gas on the face of the ',...
+                'instrument for a period of +/-100 min of the overflight.']);
             clear Incident_ion_density1
             clear Incident_ion_density2
             clear Incident_ion_density3
@@ -1171,15 +1176,15 @@ for active_file = 1:NC_file_number
             try
                 nccreate(ncfilename,'B_sweep_TIA_signal_voltage',...
                     'Dimensions',{'unique_overflights',...
-                    unique_overflights,'window_lla_points',...
-                    window_lla_points});
+                    unique_overflights,'window_points',window_points,...
+                    'sweep_points',29});
             catch
             end
-            IMESA_window_sweep_TIA_signal_voltage=nan(unique_overflights,...
-                window_lla_points);
+            IMESA_window_sweep_TIA_signal_voltage=nan(...
+                unique_overflights,window_points,29);
             for m=1:unique_overflights            
-                last_index = IMESA_lla_indexes(m,1)+1;
-                indexes = IMESA_lla_indexes(m,2:last_index);
+               last_index = IMESA_window_indexes(m,1)+1;                  
+                indexes = IMESA_window_indexes(m,2:last_index);
                 
                 sweep_TIA_signal_voltage1 = ncread(ncfilename,...
                     '2_sweep_TIA_signal_voltage');
@@ -1195,7 +1200,7 @@ for active_file = 1:NC_file_number
                     sweep_TIA_signal_voltage3 = ncread(previousfile_Path,...
                         '2_sweep_TIA_signal_voltage');
                 else
-                    sweep_TIA_signal_voltage3 = nan;
+                    sweep_TIA_signal_voltage3 = nan(1,29);
                 end   
 
                 sweep_TIA_signal_voltage = [sweep_TIA_signal_voltage3;...
@@ -1205,8 +1210,10 @@ for active_file = 1:NC_file_number
             end
             ncwrite(ncfilename,'B_sweep_TIA_signal_voltage',...
                 IMESA_window_sweep_TIA_signal_voltage);
-%             ncwriteatt(ncfilename,'B_sweep_TIA_signal_voltage',...
-%                 'description','+/-100 min of the overflight.');
+            ncwriteatt(ncfilename,'B_sweep_TIA_signal_voltage',...
+                'description',...
+                ['The voltage output of the TIA less the quiescent ',...
+                'value +/-100 min of the overflight.']);
             clear sweep_TIA_signal_voltage1
             clear sweep_TIA_signal_voltage2
             clear sweep_TIA_signal_voltage3
@@ -1259,7 +1266,7 @@ for active_file = 1:NC_file_number
             ' in function ', EM_name, ' at line ', num2str(EM_line),...
             '. Message: ', EM,'\r']);           
         fprintf(2,['Broke on active_file: ',num2str(active_file),...
-            ', Filename: ',sourceFileName,' Sweepnumber: ',...
+            ', Filename: ',filename,' Sweepnumber: ',...
             num2str(i),'\r']);
         
         % Create and Add to error file

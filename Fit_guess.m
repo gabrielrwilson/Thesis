@@ -95,7 +95,7 @@ function [A,B,C,D,status] = Fit_guess(esadata_fit,xdata)
 
                     if(x_higher_half~=x_lower_half)
                         cc = 1/abs(x_higher_half-x_lower_half); % Width at half of peak
-                    elseif(x_lower_half>x_higher_half)
+                    else(x_lower_half>x_higher_half)
                         cc = 2e3*Kb; % typical guess                            
                     end
 
@@ -123,12 +123,13 @@ function [A,B,C,D,status] = Fit_guess(esadata_fit,xdata)
                     if( length(esa_extreme_index)<4 )
                         if( (max(esa_extreme_index)==25 )&&(min(esa_extreme_index)>2) )
                             esa_extreme_index = min(esa_extreme_index)-2:1:max(esa_extreme_index);
-                        elseif( (min(esa_extreme_index)==1)&&(max(esa_extreme_index)<27) )
+                        elseif( (min(esa_extreme_index)==1)&&(max(esa_extreme_index)<23) )
                             esa_extreme_index = min(esa_extreme_index):1:max(esa_extreme_index)+2;                        
                         else
                             esa_extreme_index = min(esa_extreme_index)-1:1:max(esa_extreme_index)+1;
                         end
                     end
+                    esa_extreme_index=esa_extreme_index(find(~(esa_extreme_index<1|esa_extreme_index>25)));
 
                     %Fit to the a polynomial with degree equal to 1 less than the
                     %number of fit points                        
