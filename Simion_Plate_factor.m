@@ -16,7 +16,7 @@ str_to_find1 = [{'running'} {'with'} {'V='}];
 str_to_find2 = [{'"Number'} {'of'} {'Ions'} {'to'} {'Fly'} {'='}];
 str_to_find3 = '1,';
 files_processed = 0;
-plate_factor = nan(SIMION_file_number,8);
+plate_factor = nan(SIMION_file_number,10);
 Counts = nan(SIMION_file_number,4);
 particle_num = 500001;
 
@@ -26,7 +26,7 @@ for active_file = 1:SIMION_file_number
     disp(['Reading file number ', num2str(active_file)]);
     
     try
-        load plate_factor;
+        load plate_factor2;
     catch
     end
 
@@ -68,6 +68,8 @@ for active_file = 1:SIMION_file_number
         fclose(fileID);
         disp(['Found file for V=', num2str(voltage)]);
         
+        % The variables go as 
+        % (Ion Number,Xo,Yo,Zo,Ex,Ey,Ez,dEx,dEy,dEz)
         fileID = fopen(FileName,'r');    %open file
         textscan(fileID,'%s',data_start-1);
         vars = nan(particle_num,5);
@@ -100,7 +102,13 @@ for active_file = 1:SIMION_file_number
                 vars(ion_num,5) = data(1,10);                
                 vars(ion_num,1) = 1;
             end
-            
+            % vars breakdown
+            % vars(:,1) => 1 if ion passes through filter, 0 else
+            % vars(:,2) => initial x energy
+            % vars(:,3) => initial x energy error
+            % vars(:,4) => final x energy 
+            % vars(:,5) => final x energy error
+
             data_read = textscan(fileID,'%s',1);
             data_read = char(data_read{1,1});
             i=i+1;
@@ -109,16 +117,20 @@ for active_file = 1:SIMION_file_number
 
 %% Determine the range of KEs for the given V
 
-        num_pass = nansum(vars(:,1));
+        num_pass = nansum(vars(:,1));  % The number of ions that pass the filter
         disp(['Found ',num2str(num_pass),' particles']);
-        plate_factor(active_file,1) = voltage;
-        measured_index = find(vars(:,1)==1);
+        plate_factor(active_file,1) = voltage;  % The plate voltage
+        measured_index = find(vars(:,1)==1); % The vars index of each particle that pass the filter
         measured = vars(measured_index,:);
         E = nanmean(measured(:,2));
         dE = nanmean(measured(:,3));
+        E_rms_error = sqrt(nanmean((measured(:,2)-E).^2));
+        dE_rms_error = sqrt(nanmean((measured(:,3)-dE).^2));
         plate_factor(active_file,2) = E;
         plate_factor(active_file,3) = dE;
         plate_factor(active_file,4) = E/voltage;
+        plate_factor(active_file,9) = E_rms_error;
+        plate_factor(active_file,9) = dE_rms_error;
         if(num_pass > 0)
             plate_factor(active_file,5) = nanmin(measured(:,2));
             plate_factor(active_file,6) = nanmax(measured(:,2));
@@ -146,12 +158,12 @@ for active_file = 1:SIMION_file_number
         disp(['Throughput is: ', num2str(Counts(active_file,4))]);
         disp('___');
     end
-    save plate_factor;
+    save plate_factor2;
 end
 
 % Do a regression line for the plate factor and the throughput
-Energy = plate_factor(:,2);
 Voltage = plate_factor(:,1);
+Energy = plate_factor(:,2);
 Num_pass = Counts(:,2);
 Num_enter = Counts(:,3);
 
@@ -163,9 +175,11 @@ Num_enter=Num_enter(notnan_index);
 
 f_pf=fit(Voltage,Energy,'poly1');
 plot(f_pf,Voltage,Energy);
+ci_pf = confint(f_pf);
 Derived_plate_factor = f_pf.p1;
+Derived_plate_factor_ci95 = ci_pf(:,1);
 
-%Drop an outlier
+%Drop any outliers
 index = [1:7 9:length(Energy)];
 Energy=Energy(index);
 Voltage= Voltage(index);
@@ -188,9 +202,12 @@ hold off
 
 f_tp= fit(Energy,Through,'poly1');
 p_line = polyfit(Energy,Through,1);
+ci_tp = confint(f_tp);
 plot(f_tp,Energy,Through)
 
 Through_Put = [Energy, polyval(p_line,Energy)];
+Through_Put_line = [f_tp.p1 ci_tp(1,1) ci_tp(2,1);...
+    f_tp.p2 ci_tp(1,2) ci_tp(2,2)];
 
 save('Simion_calcs','Through_Put','Derived_plate_factor');
 save plate_factor

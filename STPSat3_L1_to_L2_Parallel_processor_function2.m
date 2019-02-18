@@ -215,9 +215,17 @@ function STPSat3_L1_to_L2_Parallel_processor_function2(parint,NC_source_folder_n
                 end
             end
             % plot(ADC_value(test_index,2:29)')
+                        
+            % ADC Bit Error
+            % From teh MAX1284 spec sheet
+            ADC_value_error = [1 1];
+            ADC_output_error = zeros(2,length(raw_data),MAX_NUM_SWEEP_STEPS);
+            ADC_output_error(1,:,:) = ADC_output(:,:)+ADC_value_error(1);
+            ADC_output_error(2,:,:) = ADC_output(:,:)+ADC_value_error(2);
 
             % (3) Calculate the ADC Voltage
             ADC_voltage = ADC_value*ADC_satuation_volt/2^ADC_bit_Depth;
+            ADC_satuation_volt_error = [2.48 2.52];
             % plot(ADC_voltage(test_index,2:29)')
 
             % (4) Back out the Quiescient voltage
